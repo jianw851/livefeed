@@ -9,11 +9,11 @@
     <version>1.0-SNAPSHOT</version>
 
 
-    <!-- dependencies>
+    <dependencies>
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
-            <version>4.3</version>
+            <version>4.3-alpha1</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
@@ -22,6 +22,29 @@
             <version>1.1.1</version>
             <scope>compile</scope>
         </dependency>
-    </dependencies -->
+        <dependency>
+            <groupId>com.google.api-client</groupId>
+            <artifactId>google-api-client</artifactId>
+            <version>1.23.0</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.google.oauth-client</groupId>
+            <artifactId>google-oauth-client-jetty</artifactId>
+            <version>1.23.0</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.google.apis</groupId>
+            <artifactId>google-api-services-gmail</artifactId>
+            <version>v1-rev83-1.23.0</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>javax.mail</groupId>
+            <artifactId>javax.mail-api</artifactId>
+            <version>1.6.2</version>
+        </dependency>
+    </dependencies>
 
 </project>
