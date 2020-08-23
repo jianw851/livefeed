@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.security.GeneralSecurityException;
 
 import org.apache.http.*;
 import org.apache.http.client.methods.*;
@@ -40,7 +41,7 @@ public class OandaRestV20 implements Feed {
     }
 
     @Override
-    public void run() throws IOException, RuntimeException {
+    public void run() throws IOException, RuntimeException, GeneralSecurityException {
         try {
             System.out.println("Executing request: " + this.httpGet.getRequestLine());
             HttpResponse resp = this.httpClient.execute(this.httpGet);

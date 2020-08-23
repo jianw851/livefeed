@@ -1,6 +1,7 @@
 import event.EventTopic;
 import feed.Feed;
 import feed.OandaRestV20;
+import feed.OandaSignal;
 
 public class FeedRunner {
     private static FeedRunner INSTANCE = null;
@@ -35,6 +36,8 @@ public class FeedRunner {
         this.brokerEnv = System.getenv("BROKER_ENV");
         if(brokerName.equalsIgnoreCase("OANDA") && apiName.equalsIgnoreCase("RestV20")) {
             this.feed = new OandaRestV20(brokerEnv, accountID, instrument, token, Double.valueOf(threshold));
+        } else if (brokerName.equalsIgnoreCase("OANDA") && apiName.equalsIgnoreCase("SIGNAL")) {
+            this.feed = new OandaSignal();
         }
     }
 
@@ -45,19 +48,10 @@ public class FeedRunner {
         return INSTANCE;
     }
 
-    public void run() {
-        try {
-            this.feed.run();
-        } catch (Exception e) {
-            // TODO: log to kafka
-            e.printStackTrace();
-        }
-    }
-
     public static void main(String[] args) {
         try {
             FeedRunner feedRunner = FeedRunner.getInstance();
-            feedRunner.run();
+            feedRunner.feed.run();
         } catch (Exception e) {
             // TODO: log exceptions to kafka
             e.printStackTrace();
