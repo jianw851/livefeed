@@ -255,7 +255,7 @@ public class OandaSignal implements Feed {
                 // for testing purpose, can modify get(#) to get the last # emails
                 // however in production, the number should always to set to 0
                 // otherwise an old signal will be sent
-                String msgID = response.getMessages().get(0).getId();
+                String msgID = response.getMessages().get(40).getId();
                 Message message = gmail.users().messages().get(userID, msgID).execute();
                 lastMessageDeliverTimeInSec = message.getInternalDate() / 1000L + TIME_OFFSET; // add time offset in case duplicate signal
                 // every time when restart this app, update the timestamp to pull emails
