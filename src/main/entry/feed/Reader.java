@@ -184,7 +184,7 @@ class Reader {
         return messages;
     }
 
-    public static void main(String[] args) throws Exception {
+    public static void main1(String[] args) throws Exception {
         Reader r = new Reader();
         String user = "jianw851@gmail.com";
         ListLabelsResponse listResponse = r.gmail.users().labels().list(user).execute();
