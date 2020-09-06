@@ -16,6 +16,7 @@ import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.api.services.gmail.Gmail;
 import com.google.api.services.gmail.model.*;
 import com.google.api.services.gmail.GmailScopes;
+import event.EventPublisher;
 import org.jsoup.nodes.Element;
 import util.DateTimeUtils;
 
@@ -32,6 +33,8 @@ import java.util.*;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 
+import static java.lang.Thread.sleep;
+
 public class OandaSignal implements Feed {
 
     private static final List<String> SCOPES = Arrays.asList(GmailScopes.MAIL_GOOGLE_COM,
@@ -47,11 +50,12 @@ public class OandaSignal implements Feed {
     private static Gmail gmail = null;
     private final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
     private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
+    private static final int TIME_OFFSET = 3;
+    private static String TOPIC = null;
+    private static String INSTRUMENT = null;
 
 
     // app specific params
-    private static final String APPLICATION_NAME = "liveget";
-    private static final String TOKENS_DIRECTORY_PATH = "tokens";
     private static ZonedDateTime dateTime = ZonedDateTime.ofInstant(Instant.now(), ZoneId.of("US/Pacific"));
     private static long lastMessageDeliverTimeInSec = -1L;
     private final static List<String> labelIDs = Arrays.asList("Label_7808765998247590589");
@@ -87,6 +91,7 @@ public class OandaSignal implements Feed {
                 if(instrument.length() > 6) {
                     throw new RuntimeException("Oanda Signal html page update, instrument parsing Exception");
                 }
+                INSTRUMENT = instrument;
                 ret.append(instrument.substring(0,3));
                 ret.append("_");
                 ret.append(instrument.substring(3, 6));
@@ -144,11 +149,12 @@ public class OandaSignal implements Feed {
     }
 
 
-    public OandaSignal() throws GeneralSecurityException, IOException {
+    public OandaSignal(String topic) throws GeneralSecurityException, IOException {
         gmail = new Gmail.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
-                .setApplicationName(APPLICATION_NAME)
+                .setApplicationName(System.getenv("GCP_APPLICATION_NAME"))
                 .build();
         init();
+        this.TOPIC = topic;
     }
 
     /**
@@ -168,7 +174,7 @@ public class OandaSignal implements Feed {
         // Build flow and trigger user authorization request.
         GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(
                 HTTP_TRANSPORT, JSON_FACTORY, clientSecrets, URLSCOPES)
-                .setDataStoreFactory(new FileDataStoreFactory(new java.io.File(TOKENS_DIRECTORY_PATH)))
+                .setDataStoreFactory(new FileDataStoreFactory(new java.io.File(System.getenv("GCP_TOKENS_DIRECTORY_PATH"))))
                 .setAccessType("offline")
                 .build();
         LocalServerReceiver receiver = new LocalServerReceiver.Builder().setPort(8888).build();
@@ -185,7 +191,7 @@ public class OandaSignal implements Feed {
     private static String getMessage(String messageId)
             throws IOException {
         Message message = gmail.users().messages().get(userID, messageId).execute();
-        long newMsgTime = message.getInternalDate() / 1000L;
+        long newMsgTime = message.getInternalDate() / 1000L + TIME_OFFSET;
         if(lastMessageDeliverTimeInSec < newMsgTime) {
             lastMessageDeliverTimeInSec = newMsgTime;
         }
@@ -246,9 +252,13 @@ public class OandaSignal implements Feed {
             ListMessagesResponse response = gmail.users().messages().list(userID)
                     .setLabelIds(labelIDs).setQ("after:"+String.valueOf(dateTime.toEpochSecond()-DateTimeUtils.weekInSec)).execute();
             if(response.getMessages().size() > 0) {
-                String msgID = response.getMessages().get(40).getId();
+                // for testing purpose, can modify get(#) to get the last # emails
+                // however in production, the number should always to set to 0
+                // otherwise an old signal will be sent
+                String msgID = response.getMessages().get(0).getId();
                 Message message = gmail.users().messages().get(userID, msgID).execute();
-                lastMessageDeliverTimeInSec = message.getInternalDate() / 1000L;
+                lastMessageDeliverTimeInSec = message.getInternalDate() / 1000L + TIME_OFFSET; // add time offset in case duplicate signal
+                // every time when restart this app, update the timestamp to pull emails
                 System.out.println("lastMessageDeliverTimeInSec set: " + this.lastMessageDeliverTimeInSec + " -> " +
                         DateTimeUtils.epochToDateTimeString(lastMessageDeliverTimeInSec));
             } else {
@@ -257,15 +267,22 @@ public class OandaSignal implements Feed {
         }
     }
 
-    public void run() throws IOException, RuntimeException, GeneralSecurityException {
+    public void run() throws IOException, RuntimeException, GeneralSecurityException, InterruptedException {
+        while(true) {
+            queryNewEmails();
+            sleep(10000); // query every 10 sec
+        }
+    }
+
+    private void queryNewEmails() throws IOException, RuntimeException, GeneralSecurityException {
         List<Message> messageIds = OandaSignal.listMessagesWithLabels("after:"+String.valueOf(lastMessageDeliverTimeInSec));
         if(messageIds.size() > 0) {
             for (Message msg : messageIds) {
-                System.out.println(msg.getId());
                 String htmlMessage = OandaSignal.getMessage(msg.getId());
                 String result = Parser.Parse(htmlMessage);
                 // TODO: write into kafka broker
                 System.out.println(result);
+                EventPublisher.publish(TOPIC+INSTRUMENT, result);
             }
         }
     }

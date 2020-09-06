@@ -42,7 +42,7 @@ public class EventTopic {
         switch (i) {
             case "CURRENCY":
                 return InstrumentType.CURRENCY.id();
-            case "IB":
+            case "STOCK":
                 return InstrumentType.STOCK.id();
             default: {
                 // to do log in kafka

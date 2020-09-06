@@ -80,8 +80,6 @@ public class OandaRestV20 implements Feed {
             }
         } catch (Exception e) {
             throw new RuntimeException("Failed to get pricing stream from oanda rest v20");
-        } finally {
-            httpClient.getConnectionManager().shutdown();
         }
     }
 }

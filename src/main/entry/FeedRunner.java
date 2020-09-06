@@ -37,7 +37,7 @@ public class FeedRunner {
         if(brokerName.equalsIgnoreCase("OANDA") && apiName.equalsIgnoreCase("RestV20")) {
             this.feed = new OandaRestV20(brokerEnv, accountID, instrument, token, Double.valueOf(threshold));
         } else if (brokerName.equalsIgnoreCase("OANDA") && apiName.equalsIgnoreCase("SIGNAL")) {
-            this.feed = new OandaSignal();
+            this.feed = new OandaSignal("OANDA|CURRENCY|SIGNAL|");
         }
     }
 
@@ -48,6 +48,11 @@ public class FeedRunner {
         return INSTANCE;
     }
 
+    /*
+    this is a compound feed, different parameter decide which feed to run
+    so each kafka record will be send inside each feed
+    only exception message will be send in main funtion
+     */
     public static void main(String[] args) {
         try {
             FeedRunner feedRunner = FeedRunner.getInstance();
