@@ -39,7 +39,7 @@ public class FeedRunner {
         if(brokerName.equalsIgnoreCase("OANDA") && apiName.equalsIgnoreCase("RestV20")) {
             this.feed = new OandaRestV20(publisher, brokerEnv, accountID, instrument, token, Double.valueOf(threshold));
         } else if (brokerName.equalsIgnoreCase("OANDA") && apiName.equalsIgnoreCase("SIGNAL")) {
-            this.feed = new OandaSignal(publisher, "OANDA|CURRENCY|SIGNAL|");
+            this.feed = new OandaSignal(publisher, topic);
         }
     }
 

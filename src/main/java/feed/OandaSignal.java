@@ -92,11 +92,11 @@ public class OandaSignal implements Feed {
                 if(instrument.length() > 6) {
                     throw new RuntimeException("Oanda Signal html page update, instrument parsing Exception");
                 }
-                INSTRUMENT = instrument;
                 ret.append(instrument.substring(0,3));
                 ret.append("_");
                 ret.append(instrument.substring(3, 6));
                 ret.append("|");
+                INSTRUMENT = ret.substring(0, ret.length()-1).toString();
                 // parse IDENTIFIED_TIME|BREAKOUT_PRICE|FORECAST_PRICE|PROBABILITY
                 String temp = body.substring(body.indexOf("Identified time"), body.indexOf("% Pattern"));
                 // String temp = tdList.get(15).text();
@@ -156,6 +156,9 @@ public class OandaSignal implements Feed {
                 .build();
         init();
         this.TOPIC = topic;
+        if(topic.charAt(topic.length()-1) == '*') {
+            this.TOPIC = topic.replace("*","");
+        }
         this.publisher = publisher;
     }
 
