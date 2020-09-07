@@ -285,9 +285,11 @@ public class OandaSignal implements Feed {
             for (Message msg : messageIds) {
                 String htmlMessage = OandaSignal.getMessage(msg.getId());
                 String result = Parser.Parse(htmlMessage);
-                // TODO: write into kafka broker
-                System.out.println(result);
-                publisher.publish(TOPIC+INSTRUMENT, result);
+                if(Parser.canSend) {
+                    System.out.println("TOPIC: " + TOPIC + INSTRUMENT);
+                    System.out.println("MESSAGE: " + result);
+                    publisher.publish(TOPIC + INSTRUMENT, result);
+                }
             }
         }
     }

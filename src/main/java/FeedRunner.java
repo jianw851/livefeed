@@ -6,7 +6,7 @@ import feed.OandaSignal;
 
 public class FeedRunner {
     private static FeedRunner INSTANCE = null;
-    private final String DELIMITER = "\\|";
+    private final String DELIMITER = "-";
     private String feedName = null;
     private String apiName = null;
     private String brokerName = null;

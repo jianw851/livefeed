@@ -2,7 +2,7 @@ package event;
 
 
 public class EventTopic {
-    private static final String DELIMITER = "\\|";
+    private static final String DELIMITER = "-";
     public static String parseEventTopic(String ds) throws Exception {
         String[] array = ds.split(DELIMITER);
         if(array.length < 4) {
@@ -11,11 +11,11 @@ public class EventTopic {
         }
         StringBuilder sb = new StringBuilder();
         sb.append(String.valueOf(parseBrokerID(array[0])));
-        sb.append("|");
+        sb.append(DELIMITER);
         sb.append(String.valueOf(parseInstrumentTypeID(array[1])));
-        sb.append("|");
+        sb.append(DELIMITER);
         sb.append(String.valueOf(parseEventTypeID(array[2])));
-        sb.append("|");
+        sb.append(DELIMITER);
         sb.append(array[3]);
         return sb.toString();
     }
