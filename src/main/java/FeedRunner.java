@@ -1,3 +1,4 @@
+import event.EventPublisher;
 import event.EventTopic;
 import feed.Feed;
 import feed.OandaRestV20;
@@ -18,6 +19,7 @@ public class FeedRunner {
     private String accountID = null;
     private String token = null;
     private String brokerEnv = null;
+    private EventPublisher publisher = null;
 
     private FeedRunner() throws Exception {
         this.feedName = System.getenv("FEED_NAME");
@@ -27,17 +29,17 @@ public class FeedRunner {
         this.instrumentType = array[2];
         this.instrument = array[3];
         this.topic = EventTopic.parseEventTopic(this.feedName);
-        // TODO: build producer
         // build broker
+        this.publisher = EventPublisher.getInstance();
         this.accountID = System.getenv("ACCOUNT_ID");
         this.token = System.getenv("TOKEN");
         this.threshold = System.getenv("THRESHOLD");
         this.apiName = System.getenv("BROKER_API_NAME");
         this.brokerEnv = System.getenv("BROKER_ENV");
         if(brokerName.equalsIgnoreCase("OANDA") && apiName.equalsIgnoreCase("RestV20")) {
-            this.feed = new OandaRestV20(brokerEnv, accountID, instrument, token, Double.valueOf(threshold));
+            this.feed = new OandaRestV20(publisher, brokerEnv, accountID, instrument, token, Double.valueOf(threshold));
         } else if (brokerName.equalsIgnoreCase("OANDA") && apiName.equalsIgnoreCase("SIGNAL")) {
-            this.feed = new OandaSignal("OANDA|CURRENCY|SIGNAL|");
+            this.feed = new OandaSignal(publisher, "OANDA|CURRENCY|SIGNAL|");
         }
     }
 

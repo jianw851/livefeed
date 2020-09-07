@@ -6,6 +6,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.security.GeneralSecurityException;
 
+import event.EventPublisher;
 import org.apache.http.*;
 import org.apache.http.client.methods.*;
 import org.apache.http.impl.client.HttpClientBuilder;
@@ -25,9 +26,12 @@ public class OandaRestV20 implements Feed {
     private String accountID = null;
     private double threshold = 0.00005;
     private HttpClient httpClient = HttpClientBuilder.create().build();
+    private EventPublisher publisher = null;
     HttpUriRequest httpGet =  null;
 
-    public OandaRestV20(String env, String accountID, String instr, String token, double threshold) throws Exception {
+
+    public OandaRestV20(EventPublisher publisher, String env, String accountID, String instr, String token, double threshold) throws Exception {
+        this.publisher = publisher;
         this.instrument = instr;
         this.token = token;
         this.threshold = threshold;

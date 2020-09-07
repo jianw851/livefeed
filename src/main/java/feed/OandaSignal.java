@@ -53,6 +53,7 @@ public class OandaSignal implements Feed {
     private static final int TIME_OFFSET = 3;
     private static String TOPIC = null;
     private static String INSTRUMENT = null;
+    private EventPublisher publisher = null;
 
 
     // app specific params
@@ -149,12 +150,13 @@ public class OandaSignal implements Feed {
     }
 
 
-    public OandaSignal(String topic) throws GeneralSecurityException, IOException {
+    public OandaSignal(EventPublisher publisher, String topic) throws GeneralSecurityException, IOException {
         gmail = new Gmail.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
                 .setApplicationName(System.getenv("GCP_APPLICATION_NAME"))
                 .build();
         init();
         this.TOPIC = topic;
+        this.publisher = publisher;
     }
 
     /**
@@ -282,7 +284,7 @@ public class OandaSignal implements Feed {
                 String result = Parser.Parse(htmlMessage);
                 // TODO: write into kafka broker
                 System.out.println(result);
-                EventPublisher.publish(TOPIC+INSTRUMENT, result);
+                publisher.publish(TOPIC+INSTRUMENT, result);
             }
         }
     }
