@@ -1,0 +1,71 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="livefeed" type="MavenRunConfiguration" factoryName="Maven">
+    <MavenSettings>
+      <option name="myGeneralSettings">
+        <MavenGeneralSettings>
+          <option name="alwaysUpdateSnapshots" value="false" />
+          <option name="checksumPolicy" value="NOT_SET" />
+          <option name="failureBehavior" value="NOT_SET" />
+          <option name="localRepository" value="" />
+          <option name="mavenHome" value="Bundled (Maven 3)" />
+          <option name="nonRecursive" value="false" />
+          <option name="outputLevel" value="INFO" />
+          <option name="pluginUpdatePolicy" value="DEFAULT" />
+          <option name="printErrorStackTraces" value="true" />
+          <option name="threads" />
+          <option name="updateIndicesOnProjectOpen" value="true" />
+          <option name="usePluginRegistry" value="true" />
+          <option name="userSettingsFile" value="" />
+          <option name="workOffline" value="false" />
+        </MavenGeneralSettings>
+      </option>
+      <option name="myRunnerSettings">
+        <MavenRunnerSettings>
+          <option name="delegateBuildToMaven" value="false" />
+          <option name="environmentProperties">
+            <map>
+              <entry key="ACCOUNT_ID" value="101-001-6611005-004" />
+              <entry key="BOOTSTRAP_SERVERS_CONFIG" value="10.110.191.220:9092" />
+              <entry key="BROKER_ENV" value="test" />
+              <entry key="GCP_APPLICATION_NAME" value="livefeed" />
+              <entry key="GCP_TOKENS_DIRECTORY_PATH" value="$PROJECT_DIR$/tokens" />
+              <entry key="THRESHOLD" value="0.00005" />
+              <entry key="TOKEN" value="5110cecce4ec2110023048e354d9eaa3-d5942eebcabfcfc1616d30923f0264c0" />
+            </map>
+          </option>
+          <option name="jreName" value="#USE_PROJECT_JDK" />
+          <option name="mavenProperties">
+            <map>
+              <entry key="FeedRunner" value="" />
+            </map>
+          </option>
+          <option name="passParentEnv" value="true" />
+          <option name="runMavenInBackground" value="true" />
+          <option name="skipTests" value="true" />
+          <option name="vmOptions" value="" />
+        </MavenRunnerSettings>
+      </option>
+      <option name="myRunnerParameters">
+        <MavenRunnerParameters>
+          <option name="profiles">
+            <set />
+          </option>
+          <option name="goals">
+            <list>
+              <option value="package" />
+            </list>
+          </option>
+          <option name="pomFileName" value="pom.xml" />
+          <option name="profilesMap">
+            <map>
+              <entry key="FeedRunner" value="true" />
+            </map>
+          </option>
+          <option name="resolveToWorkspace" value="true" />
+          <option name="workingDirPath" value="$PROJECT_DIR$" />
+        </MavenRunnerParameters>
+      </option>
+    </MavenSettings>
+    <method v="2" />
+  </configuration>
+</component>
