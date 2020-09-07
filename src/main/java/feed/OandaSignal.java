@@ -142,6 +142,7 @@ public class OandaSignal implements Feed {
                 ret.append(String.valueOf(maxInterval*60));
                 //System.out.printf("Body: %s%n", body);
                 //System.out.printf("%d, %d %n", minInteval, maxInterval);
+                canSend = true;
             } else {
                 canSend = false;
             }
