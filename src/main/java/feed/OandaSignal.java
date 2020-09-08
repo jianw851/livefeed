@@ -285,7 +285,7 @@ public class OandaSignal implements Feed {
     public void run() throws IOException, RuntimeException, GeneralSecurityException, InterruptedException {
         while(true) {
             queryNewEmails();
-            sleep(10000); // query every 10 sec
+            sleep(30000); // query every 30 seconds
         }
     }
 

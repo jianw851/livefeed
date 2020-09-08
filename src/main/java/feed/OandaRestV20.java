@@ -14,28 +14,34 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.util.EntityUtils;
 
+import org.apache.log4j.Logger;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 
 public class OandaRestV20 implements Feed {
+    // logger
+    private final static Logger logger = Logger.getLogger(OandaRestV20.class);
+    // account attributes
     private String prodEnvURL = "https://stream-fxtrade.oanda.com";
     private String testEnvURL = "https://stream-fxpractice.oanda.com";
     private String instrument = null;
     private String token = null;
     private String accountID = null;
     private double threshold = 0.00005;
+    private String topic = null;
     private HttpClient httpClient = HttpClientBuilder.create().build();
     private EventPublisher publisher = null;
     HttpUriRequest httpGet =  null;
 
 
-    public OandaRestV20(EventPublisher publisher, String env, String accountID, String instr, String token, double threshold) throws Exception {
+    public OandaRestV20(EventPublisher publisher, String topic, String env, String accountID, String instr, String token, double threshold) throws Exception {
         this.publisher = publisher;
         this.instrument = instr;
         this.token = token;
         this.threshold = threshold;
         this.accountID = accountID;
+        this.topic = topic;
         if(env.equalsIgnoreCase("prod")) {
             httpGet = new HttpGet(prodEnvURL + "/v3/accounts/" + this.accountID + "/pricing/stream?instruments=" + this.instrument);
         } else {
@@ -69,21 +75,19 @@ public class OandaRestV20 implements Feed {
                         if(bid - lastbid > this.threshold || lastbid - bid > this.threshold ||
                                 lastask - ask > this.threshold || ask - lastask > this.threshold) {
                             // TODO: write into kafka broker
-                            System.out.println(time + " " + " " + bid + " " + ask);
+                            System.out.println(time + "|" + bid + "|" + ask);
+                            publisher.publish(topic, time + "|" + bid + "|" + ask);
                             lastbid = bid;
                             lastask = ask;
                         }
                     }
                 }
             } else {
-                // print error message
                 String responseString = EntityUtils.toString(entity, "UTF-8");
-                // TODO: write exception into kafka broker with a different topic
-                throw new RuntimeException("http response not 200 or no response");
-                // System.out.println(responseString);
+                logger.error("http response not 200 or no response, response: " + responseString);
             }
         } catch (Exception e) {
-            throw new RuntimeException("Failed to get pricing stream from oanda rest v20");
+            logger.error("Failed to get pricing stream from oanda rest v20");
         }
     }
 }

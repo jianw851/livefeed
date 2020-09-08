@@ -43,7 +43,7 @@ public class FeedRunner {
         logger.info(getClassToString());
         if(brokerName.equalsIgnoreCase("OANDA") && apiName.equalsIgnoreCase("RestV20")) {
             logger.info("Creating OandaRestV20 feed...");
-            this.feed = new OandaRestV20(publisher, brokerEnv, accountID, instrument, token, Double.valueOf(threshold));
+            this.feed = new OandaRestV20(publisher, topic, brokerEnv, accountID, instrument, token, Double.valueOf(threshold));
         } else if (brokerName.equalsIgnoreCase("OANDA") && apiName.equalsIgnoreCase("SIGNAL")) {
             logger.info("Creating OandaSignal feed...");
             this.feed = new OandaSignal(publisher, topic);
