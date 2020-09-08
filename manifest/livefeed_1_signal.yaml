@@ -9,11 +9,11 @@ spec:
     type: RollingUpdate
   selector:
     matchLabels:
-      app: livefeed
+      app: kafka
   template:
     metadata:
       labels:
-        app: livefeed
+        app: kafka
     spec:
       containers:
         - name: kafka
@@ -23,7 +23,7 @@ spec:
             - containerPort: 9092
           env:
             - name: FEED_NAME
-              value: "OANDA|SIGNAL|CURRENCY|*"
+              value: "OANDA-SIGNAL-CURRENCY-*"
             - name: ACCOUNT_ID
               value: "001-001-1638442-003"
             - name: TOKEN
@@ -38,7 +38,5 @@ spec:
               value: "livefeed"
             - name: GCP_TOKENS_DIRECTORY_PATH
               value: "/opt/livefeed/tokens"
-            - name: BOOTSTRAP_SERVERS_CONFIG
-              value: "10.110.191.220:9092"
       imagePullSecrets:
         - name: regcred

@@ -35,9 +35,7 @@ RUN export JAVA_HOME
 # set up entry point
 RUN mkdir /opt/livefeed
 WORKDIR /opt/livefeed
-ADD entry_point.sh /opt/livefeed/entry_point.sh
 ADD ./tokens /opt/livefeed/tokens
-ADD ./out/artifacts/livefeed_jar/livefeed.jar /opt/livefeed/livefeed.jar
+ADD ./target/livefeed-0.0.1-jar-with-dependencies.jar /opt/livefeed/livefeed.jar
 RUN chmod +x /opt/livefeed/livefeed.jar
-RUN chmod +x /opt/livefeed/entry_point.sh
-ENTRYPOINT ["/opt/livefeed/entry_point.sh"]
+ENTRYPOINT ["java", "-jar", "/opt/livefeed/livefeed.jar"]

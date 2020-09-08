@@ -17,6 +17,7 @@ import com.google.api.services.gmail.Gmail;
 import com.google.api.services.gmail.model.*;
 import com.google.api.services.gmail.GmailScopes;
 import event.EventPublisher;
+import org.apache.log4j.Logger;
 import org.jsoup.nodes.Element;
 import util.DateTimeUtils;
 
@@ -37,6 +38,10 @@ import static java.lang.Thread.sleep;
 
 public class OandaSignal implements Feed {
 
+    // logger
+    private final static Logger logger = Logger.getLogger(OandaSignal.class);
+
+    // gmail
     private static final List<String> SCOPES = Arrays.asList(GmailScopes.MAIL_GOOGLE_COM,
             GmailScopes.GMAIL_METADATA, GmailScopes.GMAIL_LABELS,
             GmailScopes.GMAIL_READONLY, GmailScopes.GMAIL_SEND,
@@ -171,6 +176,7 @@ public class OandaSignal implements Feed {
      */
     private static Credential getCredentials(final NetHttpTransport HTTP_TRANSPORT) throws IOException {
         // Load client secrets
+        logger.info("Load client secrets");
         InputStream in = OandaSignal.class.getResourceAsStream(CREDENTIALS_FILE_PATH);
         if (in == null) {
             throw new FileNotFoundException("Resource not found: " + CREDENTIALS_FILE_PATH);
@@ -261,16 +267,18 @@ public class OandaSignal implements Feed {
                 // for testing purpose, can modify get(#) to get the last # emails
                 // however in production, the number should always to set to 0
                 // otherwise an old signal will be sent
+                // todo: to change 40 to 0 in production
                 String msgID = response.getMessages().get(40).getId();
                 Message message = gmail.users().messages().get(userID, msgID).execute();
                 lastMessageDeliverTimeInSec = message.getInternalDate() / 1000L + TIME_OFFSET; // add time offset in case duplicate signal
                 // every time when restart this app, update the timestamp to pull emails
-                System.out.println("lastMessageDeliverTimeInSec set: " + this.lastMessageDeliverTimeInSec + " -> " +
-                        DateTimeUtils.epochToDateTimeString(lastMessageDeliverTimeInSec));
+
             } else {
                 lastMessageDeliverTimeInSec = dateTime.toEpochSecond();
             }
         }
+        logger.info("lastMessageDeliverTimeInSec set: " + this.lastMessageDeliverTimeInSec + " -> " +
+                DateTimeUtils.epochToDateTimeString(lastMessageDeliverTimeInSec));
     }
 
     public void run() throws IOException, RuntimeException, GeneralSecurityException, InterruptedException {
@@ -287,8 +295,7 @@ public class OandaSignal implements Feed {
                 String htmlMessage = OandaSignal.getMessage(msg.getId());
                 String result = Parser.Parse(htmlMessage);
                 if(Parser.canSend) {
-                    System.out.println("TOPIC: " + TOPIC + INSTRUMENT);
-                    System.out.println("MESSAGE: " + result);
+                    logger.info("TOPIC: " + TOPIC + INSTRUMENT + "\n MESSAGE: " + result);
                     publisher.publish(TOPIC + INSTRUMENT, result);
                 }
             }

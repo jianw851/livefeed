@@ -26,54 +26,46 @@ public class EventTopic {
     }
 
     private static int parseBrokerID(String b) throws Exception {
-        switch (b) {
-            case "OANDA":
-                return BrokerName.OANDA.id();
-            case "IB":
-                return BrokerName.IB.id();
-            default: {
-                // to do log in kafka
-                throw new Exception();
-            }
+        if ("OANDA".equals(b)) {
+            return BrokerName.OANDA.id();
+        } else if ("IB".equals(b)) {
+            return BrokerName.IB.id();
+        } else {
+            // to do log in kafka
+            throw new Exception();
         }
     }
 
     private static int parseInstrumentTypeID(String i) throws Exception {
-        switch (i) {
-            case "CURRENCY":
-                return InstrumentType.CURRENCY.id();
-            case "STOCK":
-                return InstrumentType.STOCK.id();
-            default: {
-                // to do log in kafka
-                throw new Exception();
-            }
+        if ("CURRENCY".equals(i)) {
+            return InstrumentType.CURRENCY.id();
+        } else if ("STOCK".equals(i)) {
+            return InstrumentType.STOCK.id();
+        } else {
+            // to do log in kafka
+            throw new Exception();
         }
     }
 
     private static int parseEventTypeID(String st) throws Exception {
-        switch (st) {
-            case "PRICING":
-                return EventType.PRICING.id();
-            case "SIGNAL":
-                return EventType.SIGNAL.id();
-            default: {
-                // todo log in kafka
-                throw new Exception();
-            }
+        if ("PRICING".equals(st)) {
+            return EventType.PRICING.id();
+        } else if ("SIGNAL".equals(st)) {
+            return EventType.SIGNAL.id();
+        } else {
+            // todo log in kafka
+            throw new Exception();
         }
     }
 
     private static EventType parseEventType(String st) throws Exception {
-        switch (st) {
-            case "PRICING":
-                return EventType.PRICING;
-            case "SIGNAL":
-                return EventType.SIGNAL;
-            default: {
-                // todo log in kafka
-                throw new Exception();
-            }
+        if ("PRICING".equals(st)) {
+            return EventType.PRICING;
+        } else if ("SIGNAL".equals(st)) {
+            return EventType.SIGNAL;
+        } else {
+            // todo log in kafka
+            throw new Exception();
         }
     }
 

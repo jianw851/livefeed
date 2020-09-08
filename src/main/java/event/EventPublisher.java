@@ -4,7 +4,6 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.mortbay.log.Log;
 
 import java.util.Properties;
 
@@ -15,7 +14,11 @@ public class EventPublisher {
 
     private EventPublisher() {
         configProperties= new Properties();
-        configProperties.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, System.getenv("BOOTSTRAP_SERVERS_CONFIG"));
+        String bootstrapServer = System.getenv("BOOTSTRAP_SERVERS_CONFIG");
+        if(bootstrapServer == null) {
+            bootstrapServer = System.getenv("BOOTSTRAP_SERVICE_HOST") + ":" + System.getenv("BOOTSTRAP_SERVICE_PORT");
+        }
+        configProperties.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServer);
         configProperties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.ByteArraySerializer");
         configProperties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
         producer = new KafkaProducer(configProperties);
@@ -32,10 +35,8 @@ public class EventPublisher {
         ProducerRecord<String, String> record = new ProducerRecord<String, String>(topic, message);
         try {
             INSTANCE.producer.send(record);
-            System.out.println("sent");
         } catch (Exception e) {
             e.printStackTrace();
-            Log.debug(e.getStackTrace().toString());
         }
     }
 }
