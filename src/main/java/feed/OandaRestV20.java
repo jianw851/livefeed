@@ -74,8 +74,6 @@ public class OandaRestV20 implements Feed {
                         double ask = Double.parseDouble((String)((JSONObject)(((JSONArray) tick.get("asks")).get(0))).get("price"));
                         if(bid - lastbid > this.threshold || lastbid - bid > this.threshold ||
                                 lastask - ask > this.threshold || ask - lastask > this.threshold) {
-                            // TODO: write into kafka broker
-                            System.out.println(time + "|" + bid + "|" + ask);
                             publisher.publish(topic, time + "|" + bid + "|" + ask);
                             lastbid = bid;
                             lastask = ask;
