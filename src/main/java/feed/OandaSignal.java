@@ -206,6 +206,8 @@ public class OandaSignal implements Feed {
         long newMsgTime = message.getInternalDate() / 1000L + TIME_OFFSET;
         if(lastMessageDeliverTimeInSec < newMsgTime) {
             lastMessageDeliverTimeInSec = newMsgTime;
+            logger.info("new message detected, lastMessageDeliverTimeInSec updated: " + lastMessageDeliverTimeInSec + " -> " +
+                    DateTimeUtils.epochToDateTimeString(lastMessageDeliverTimeInSec));
         }
         // System.out.println("Message snippet: " + message.getSnippet());
         return StringUtils.newStringUtf8(Base64.decodeBase64(message.getPayload().getBody().getData()));
@@ -267,8 +269,7 @@ public class OandaSignal implements Feed {
                 // for testing purpose, can modify get(#) to get the last # emails
                 // however in production, the number should always to set to 0
                 // otherwise an old signal will be sent
-                // todo: to change 40 to 0 in production
-                String msgID = response.getMessages().get(40).getId();
+                String msgID = response.getMessages().get(0).getId();
                 Message message = gmail.users().messages().get(userID, msgID).execute();
                 lastMessageDeliverTimeInSec = message.getInternalDate() / 1000L + TIME_OFFSET; // add time offset in case duplicate signal
                 // every time when restart this app, update the timestamp to pull emails
@@ -277,7 +278,7 @@ public class OandaSignal implements Feed {
                 lastMessageDeliverTimeInSec = dateTime.toEpochSecond();
             }
         }
-        logger.info("lastMessageDeliverTimeInSec set: " + this.lastMessageDeliverTimeInSec + " -> " +
+        logger.info("lastMessageDeliverTimeInSec set: " + lastMessageDeliverTimeInSec + " -> " +
                 DateTimeUtils.epochToDateTimeString(lastMessageDeliverTimeInSec));
     }
 
@@ -295,7 +296,7 @@ public class OandaSignal implements Feed {
                 String htmlMessage = OandaSignal.getMessage(msg.getId());
                 String result = Parser.Parse(htmlMessage);
                 if(Parser.canSend) {
-                    logger.info("TOPIC: " + TOPIC + INSTRUMENT + "\n MESSAGE: " + result);
+                    logger.info("Sending signal to kafka:\nTOPIC: " + TOPIC + INSTRUMENT + "\nMESSAGE: " + result);
                     publisher.publish(TOPIC + INSTRUMENT, result);
                 }
             }
