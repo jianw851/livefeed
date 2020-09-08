@@ -5,8 +5,6 @@ metadata:
 spec:
   serviceName: kafka-headless
   replicas: 1
-  updateStrategy:
-    type: RollingUpdate
   selector:
     matchLabels:
       app: livefeed
@@ -16,8 +14,8 @@ spec:
         app: livefeed
     spec:
       containers:
-        - name: kafka
-          image: liveget/livefeed_aarch64:0.0.1
+        - name: livefeed 
+          image: liveget/livefeed_aarch64:0.0.2
           imagePullPolicy: Always
           ports:
             - containerPort: 9092

@@ -32,13 +32,15 @@ RUN apt-get install -y wget && \
 ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-arm64/
 RUN export JAVA_HOME
 
-# set nameserver to access internet
-RUN echo "nameserver 8.8.8.8" >> /etc/resolv.conf
-
 # set up entry point
 RUN mkdir /opt/livefeed
 WORKDIR /opt/livefeed
 ADD ./tokens /opt/livefeed/tokens
 ADD ./target/livefeed-0.0.1-jar-with-dependencies.jar /opt/livefeed/livefeed.jar
+
+# override resolv.conf
+ADD resolv.conf.override /etc/resolv.conf.override
 RUN chmod +x /opt/livefeed/livefeed.jar
-ENTRYPOINT ["java", "-jar", "/opt/livefeed/livefeed.jar"]
+ADD entry_point.sh /opt/livefeed/entry_point.sh
+# entry point
+ENTRYPOINT ["/opt/livefeed/entry_point.sh"]
