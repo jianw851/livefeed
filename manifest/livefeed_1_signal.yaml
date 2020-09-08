@@ -9,11 +9,11 @@ spec:
     type: RollingUpdate
   selector:
     matchLabels:
-      app: kafka
+      app: livefeed
   template:
     metadata:
       labels:
-        app: kafka
+        app: livefeed
     spec:
       containers:
         - name: kafka
@@ -23,7 +23,7 @@ spec:
             - containerPort: 9092
           env:
             - name: FEED_NAME
-              value: "OANDA-SIGNAL-CURRENCY-*"
+              value: "OANDA-CURRENCY-SIGNAL-*"
             - name: ACCOUNT_ID
               value: "001-001-1638442-003"
             - name: TOKEN

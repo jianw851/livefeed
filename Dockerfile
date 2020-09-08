@@ -32,6 +32,9 @@ RUN apt-get install -y wget && \
 ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-arm64/
 RUN export JAVA_HOME
 
+# set nameserver to access internet
+RUN echo "nameserver 8.8.8.8" >> /etc/resolv.conf
+
 # set up entry point
 RUN mkdir /opt/livefeed
 WORKDIR /opt/livefeed
