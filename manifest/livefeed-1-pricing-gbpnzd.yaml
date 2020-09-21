@@ -1,9 +1,8 @@
 apiVersion: apps/v1
-kind: StatefulSet
+kind: Deployment
 metadata:
-  name: livefeed-signal
+  name: livefeed-pricing-gbpnzd
 spec:
-  serviceName: kafka-headless
   replicas: 1
   selector:
     matchLabels:
@@ -21,7 +20,7 @@ spec:
             - containerPort: 9092
           env:
             - name: FEED_NAME
-              value: "OANDA-CURRENCY-SIGNAL-*"
+              value: "OANDA-CURRENCY-PRICING-GBP_NZD"
             - name: ACCOUNT_ID
               value: "001-001-1638442-003"
             - name: TOKEN
@@ -29,7 +28,7 @@ spec:
             - name: THRESHOLD
               value: "0.00005"
             - name: BROKER_API_NAME
-              value: "SIGNAL"
+              value: "RestV20"
             - name: BROKER_ENV
               value: "prod"
             - name: GCP_APPLICATION_NAME

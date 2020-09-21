@@ -1,9 +1,8 @@
 apiVersion: apps/v1
-kind: StatefulSet
+kind: Deployment
 metadata:
   name: livefeed-pricing-eurusd
 spec:
-  serviceName: kafka-headless
   replicas: 1
   selector:
     matchLabels:
