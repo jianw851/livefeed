@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: livefeed-pricing-audusd
+  name: livefeed-pricing-eurusd
 spec:
   replicas: 1
   selector:
@@ -20,16 +20,16 @@ spec:
               - key: kubernetes.io/arch
                 operator: In
                 values:
-                - arm64
+                - amd64
       containers:
         - name: livefeed 
-          image: liveget/livefeed_aarch64:0.0.2
+          image: liveget/livefeed_amd64:0.0.1
           imagePullPolicy: Always
           ports:
             - containerPort: 9092
           env:
             - name: FEED_NAME
-              value: "OANDA-CURRENCY-PRICING-AUD_USD"
+              value: "OANDA-CURRENCY-PRICING-EUR_USD"
             - name: ACCOUNT_ID
               value: "001-001-1638442-003"
             - name: TOKEN
