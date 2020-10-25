@@ -197,11 +197,13 @@ class Reader {
                 System.out.printf("%s - %s\n", label.getId(), label.getName());
             }
         }
+        /*
         List<Message> messageIds = Reader.listMessagesWithLabels(r.gmail, "me", Arrays.asList("Label_7808765998247590589"));
         for(Message msg : messageIds) {
             System.out.println(msg.getId());
             Reader.getMessage(r.gmail, "me", msg.getId());
         }
+         */
     }
 
 }
