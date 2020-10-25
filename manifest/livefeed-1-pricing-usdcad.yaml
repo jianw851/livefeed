@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: livefeed-pricing-audusd
+  name: livefeed-pricing-usdcad
 spec:
   replicas: 1
   selector:
@@ -29,7 +29,7 @@ spec:
             - containerPort: 9092
           env:
             - name: FEED_NAME
-              value: "OANDA-CURRENCY-PRICING-AUD_USD"
+              value: "OANDA-CURRENCY-PRICING-USD_CAD"
             - name: ACCOUNT_ID
               value: "001-001-1638442-003"
             - name: TOKEN
