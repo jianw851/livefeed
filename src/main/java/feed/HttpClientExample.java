@@ -29,12 +29,13 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import java.net.HttpURLConnection;
+import java.util.zip.GZIPInputStream;
 
 public class HttpClientExample {
 
     private List<String> cookies;
     private HttpURLConnection conn;
-    private HttpURLConnection conn1;
+    // private HttpURLConnection conn;
     private final String USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36";
     private final String USER_AGENT1 = "Mozilla/5.0";
     private final String landingUrl = "https://foresignal.com/en/login/index";
@@ -53,10 +54,7 @@ public class HttpClientExample {
         example.forceAgentHeader("https.proxyPort");
         example.forceAgentHeader("http.agent");
 
-        // 1. make sure cookies is turn on and get session id
-
-
-
+        // 1. make sure cookies is turn on and get necessary cookies from accessing landing page
         CookieHandler.setDefault(new CookieManager());
         example.setupCookies();
         // 2. make sure post params are correctly set (encoding)
@@ -65,12 +63,14 @@ public class HttpClientExample {
         // 3. Construct above post's content and then send a POST request for
         // authentication
         example.authentication();
+
+        // 4. get target signal page content
+        String content = example.getSignalPageContent();
     }
 
     protected void forceAgentHeader(final String header) throws Exception {
         final Class<?> clazz = Class
                 .forName("sun.net.www.protocol.http.HttpURLConnection");
-
         final Field field = clazz.getField("userAgent");
         field.setAccessible(true);
         Field modifiersField = Field.class.getDeclaredField("modifiers");
@@ -104,10 +104,10 @@ public class HttpClientExample {
         conn = (HttpURLConnection) obj.openConnection();
 
         // default is GET
-        //conn.setRequestMethod("GET");
+        conn.setRequestMethod("GET");
         conn.setUseCaches(false);
         // act like a browser
-        conn.setRequestProperty("Connection", "keep-alive");
+        // conn.setRequestProperty("Connection", "keep-alive");
         conn.setRequestProperty("Authority", "foresignal.com");
         conn.setRequestProperty("Scheme", "https");
         conn.setRequestProperty("User-Agent", USER_AGENT);
@@ -122,7 +122,7 @@ public class HttpClientExample {
         conn.addRequestProperty("Cookie", "_ga=GA1.2.1554919586.1603411141");
         conn.addRequestProperty("Cookie", "__gads=ID=aeb35bfb840070bd-223a36be3cc400c3:T=1603411140:RT=1603411140:S=ALNI_MZCQkrK2rB_HUbJzayrdTG2rKCcag");
         conn.addRequestProperty("Cookie", "_gid=GA1.2.658040408.1603563016");
-        conn.addRequestProperty("Cache-Contral","max-age=0");
+        conn.addRequestProperty("Cache-Control","max-age=0");
         conn.setRequestProperty("Path", "/en/login/index");
         conn.setRequestProperty("Referer", "https://foresignal.com/en/");
         conn.setRequestProperty("Sec-Fetch-Dest", "document");
@@ -149,65 +149,60 @@ public class HttpClientExample {
         //String cookie = conn.getHeaderField( "Set-Cookie").split(";")[0];
         for(String cookie : this.cookies) {
             System.out.println(cookie);
-            System.out.println(cookie.split(";")[0]);
+            // System.out.println(cookie.split(";")[0]);
         }
-        System.out.println(response.toString());
+        // System.out.println(response.toString());
 
     }
 
     private void authentication() throws Exception {
 
         URL obj = new URL(authUrl);
-        conn1 = (HttpURLConnection) obj.openConnection();
+        conn = (HttpURLConnection) obj.openConnection();
         // Acts like a browser
-        conn1.setUseCaches(false);
-        conn1.setRequestMethod("POST");
-        String userCredentials = "jianw851:Lover2!!";
-        String basicAuth = "Basic " + new String(Base64.getEncoder().encode(userCredentials.getBytes()));
-        conn1.setRequestProperty ("Authorization", basicAuth);
-        conn1.setRequestProperty("Authority", "foresignal.com");
-        conn1.setRequestProperty("Scheme", "https");
-        conn1.setRequestProperty("User-Agent", USER_AGENT);
-        conn1.addRequestProperty("User-Agent", USER_AGENT);
-        conn1.setRequestProperty("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9");
-        conn1.setRequestProperty("Accept-language", "en-US,en;q=0.5");
-        conn1.setRequestProperty("Accept-Encoding", "gzip, deflate, br");
+        conn.setUseCaches(false);
+        conn.setRequestMethod("POST");
+        conn.setRequestProperty("Authority", "foresignal.com");
+        conn.setRequestProperty("Scheme", "https");
+        conn.setRequestProperty("User-Agent", USER_AGENT);
+        conn.setRequestProperty("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9");
+        conn.setRequestProperty("Accept-language", "en-US,en;q=0.5");
+        conn.setRequestProperty("Accept-Encoding", "gzip, deflate, br");
         for (String cookie : this.cookies) {
-            conn1.addRequestProperty("Cookie", cookie.split(";")[0]);
+            conn.addRequestProperty("Cookie", cookie.split(";")[0]);
         }
-        conn1.addRequestProperty("Cookie", "_ga=GA1.2.1554919586.1603411141");
-        conn1.addRequestProperty("Cookie", "__gads=ID=aeb35bfb840070bd-223a36be3cc400c3:T=1603411140:RT=1603411140:S=ALNI_MZCQkrK2rB_HUbJzayrdTG2rKCcag");
-        conn1.addRequestProperty("Cookie", "_gid=GA1.2.658040408.1603563016");
-        conn1.setRequestProperty("Cache-Contral","max-age=0");
-        conn1.setRequestProperty("Connection", "keep-alive");
-        conn1.setRequestProperty("Path", "/en/login/login");
-        conn1.setRequestProperty("Origin", "https://foresignal.com");
-        conn1.setRequestProperty("Referer", "https://foresignal.com/en/login/index");
-        conn1.addRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-        conn1.addRequestProperty("Content-Length", "" + this.params.getBytes().length);
-        conn1.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-        conn1.setRequestProperty("Content-Length", "" + this.params.getBytes().length);
-        conn1.setRequestProperty("Sec-Fetch-Dest", "document");
-        conn1.setRequestProperty("Sec-Fetch-Site", "same-origin");
-        conn1.setRequestProperty("Sec-Fetch-Mode", "navigate");
-        conn1.setRequestProperty("Sec-Fetch-User", "?1");
-        conn1.setRequestProperty("Upgrade-Insecure-Requests", "1");
-        conn1.setDoOutput(true);
-        conn1.setDoInput(true);
+        conn.addRequestProperty("Cookie", "_ga=GA1.2.1554919586.1603411141");
+        conn.addRequestProperty("Cookie", "__gads=ID=aeb35bfb840070bd-223a36be3cc400c3:T=1603411140:RT=1603411140:S=ALNI_MZCQkrK2rB_HUbJzayrdTG2rKCcag");
+        conn.addRequestProperty("Cookie", "_gid=GA1.2.658040408.1603563016");
+
+        conn.setRequestProperty("Cache-Control","max-age=0");
+        // conn.setRequestProperty("Connection", "keep-alive");
+        conn.setRequestProperty("Path", "/en/login/login");
+        conn.setRequestProperty("Origin", "https://foresignal.com");
+        conn.setRequestProperty("Referer", "https://foresignal.com/en/login/index");
+        conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+        conn.setRequestProperty("Content-Length", "" + this.params.getBytes().length);
+        conn.setRequestProperty("Sec-Fetch-Dest", "document");
+        conn.setRequestProperty("Sec-Fetch-Site", "same-origin");
+        conn.setRequestProperty("Sec-Fetch-Mode", "navigate");
+        conn.setRequestProperty("Sec-Fetch-User", "?1");
+        conn.setRequestProperty("Upgrade-Insecure-Requests", "1");
+        conn.setDoOutput(true);
+        conn.setDoInput(true);
 
         // Send post request
-        DataOutputStream wr = new DataOutputStream(conn1.getOutputStream());
+        DataOutputStream wr = new DataOutputStream(conn.getOutputStream());
         wr.writeBytes(this.params);
         wr.flush();
         wr.close();
 
-        int responseCode = conn1.getResponseCode();
+        int responseCode = conn.getResponseCode();
         System.out.println("\nSending 'POST' request to URL : " + authUrl);
         System.out.println("Post parameters : " + this.params);
         System.out.println("Response Code : " + responseCode);
 
         BufferedReader in =
-                new BufferedReader(new InputStreamReader(conn1.getInputStream()));
+                new BufferedReader(new InputStreamReader(conn.getInputStream()));
         String inputLine;
         StringBuffer response = new StringBuffer();
 
@@ -218,6 +213,57 @@ public class HttpClientExample {
         System.out.println(response.toString());
     }
 
+    public String getSignalPageContent() throws IOException {
+        URL obj = new URL(this.signalUrl);
+        conn = (HttpURLConnection) obj.openConnection();
+        // Acts like a browser
+        conn.setUseCaches(false);
+        conn.setRequestMethod("GET");
+        conn.setRequestProperty("Authority", "foresignal.com");
+        conn.setRequestProperty("Scheme", "https");
+        conn.setRequestProperty("User-Agent", USER_AGENT);
+        conn.setRequestProperty("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9");
+        conn.setRequestProperty("Accept-language", "en-US,en;q=0.5");
+        conn.setRequestProperty("Accept-Encoding", "gzip, deflate, br");
+        for (String cookie : this.cookies) {
+            conn.addRequestProperty("Cookie", cookie.split(";")[0]);
+        }
+        conn.addRequestProperty("Cookie", "_ga=GA1.2.1554919586.1603411141");
+        conn.addRequestProperty("Cookie", "__gads=ID=aeb35bfb840070bd-223a36be3cc400c3:T=1603411140:RT=1603411140:S=ALNI_MZCQkrK2rB_HUbJzayrdTG2rKCcag");
+        conn.addRequestProperty("Cookie", "_gid=GA1.2.658040408.1603563016");
+
+        conn.setRequestProperty("Cache-Control","max-age=0");
+        // conn.setRequestProperty("Connection", "keep-alive");
+        conn.setRequestProperty("Sec-Fetch-Dest", "document");
+        conn.setRequestProperty("Sec-Fetch-Site", "same-origin");
+        conn.setRequestProperty("Sec-Fetch-Mode", "navigate");
+        conn.setRequestProperty("Sec-Fetch-User", "?1");
+        conn.setRequestProperty("Upgrade-Insecure-Requests", "1");
+        conn.setDoOutput(true);
+        conn.setDoInput(true);
+
+        // Send get request
+        int responseCode = conn.getResponseCode();
+        System.out.println("\nSending 'GET' request to URL : " + signalUrl);
+        System.out.println("Response Code : " + responseCode);
+
+        BufferedReader in = null;
+        if ("gzip".equals(conn.getContentEncoding())) {
+            in = new BufferedReader(new InputStreamReader(new GZIPInputStream(conn.getInputStream())));
+        } else {
+            in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+        }
+        String inputLine;
+        StringBuffer response = new StringBuffer();
+
+        while ((inputLine = in.readLine()) != null) {
+            response.append(inputLine);
+        }
+        in.close();
+        String ret = response.toString();
+        System.out.println(ret);
+        return ret;
+    }
     /*
     private void testIt(){
         String https_url = "https://www.google.com/";
