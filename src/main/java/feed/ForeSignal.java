@@ -314,7 +314,7 @@ public class ForeSignal implements Feed {
         }
     }
 
-    public static void main(String[] args) throws GeneralSecurityException, IOException {
+    public static void main1(String[] args) throws GeneralSecurityException, IOException {
         ForeSignal signal = new ForeSignal(null, "FORESIGNAL");
         signal.queryNewEmails();
     }

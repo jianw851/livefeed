@@ -34,7 +34,7 @@ public class HttpClientExample {
     private String params;
     private final String params1 = "user_name=jianw851&user_password=Lover2!!&set_remember_me_cookie=on&continue=&hash=";
 
-    public static void main(String[] args) throws Exception {
+    public static void main1(String[] args) throws Exception {
 
         HttpClientExample example = new HttpClientExample();
 
