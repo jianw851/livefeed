@@ -6,28 +6,18 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.cert.Certificate;
 import java.io.*;
-
 // import javax.net.ssl.HttpsURLConnection;
 import java.net.URLConnection;
-
 import javax.net.ssl.SSLPeerUnverifiedException;
-
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.CookieHandler;
 import java.net.CookieManager;
-import java.net.URL;
 import java.net.URLEncoder;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.List;
-// import javax.net.ssl.HttpsURLConnection;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
 import java.net.HttpURLConnection;
 import java.util.zip.GZIPInputStream;
 
