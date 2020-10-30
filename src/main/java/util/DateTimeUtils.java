@@ -33,6 +33,15 @@ public class DateTimeUtils {
         return format;
     }
 
+    /*
+    input format: GMT-04:00 17:58
+    output format: 16593434300
+    */
+    public static long parseForeSignalTimeEpoch(String inputString) {
+        ZonedDateTime ret = DateTimeUtils.parseForeSignalTime2ZonedDateTime(inputString);
+        return ret.toEpochSecond();
+    }
+
     public static ZonedDateTime parseForeSignalTime2ZonedDateTime(String inputString) {
         Instant now = Instant.now();
         ZonedDateTime date = ZonedDateTime.ofInstant(now, ZoneId.of(utcTimeZone));

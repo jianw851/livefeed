@@ -1,9 +1,16 @@
 package feed;
 
+import com.gargoylesoftware.css.parser.CSSException;
+import com.gargoylesoftware.css.parser.CSSErrorHandler;
+import com.gargoylesoftware.css.parser.CSSParseException;
 import com.gargoylesoftware.htmlunit.*;
 import com.gargoylesoftware.htmlunit.BrowserVersion.BrowserVersionBuilder;
 import com.gargoylesoftware.htmlunit.html.*;
+import com.gargoylesoftware.htmlunit.html.parser.HTMLParserListener;
+import com.gargoylesoftware.htmlunit.javascript.JavaScriptErrorListener;
+import com.gargoylesoftware.htmlunit.javascript.host.URL;
 import com.gargoylesoftware.htmlunit.util.Cookie;
+import org.apache.commons.logging.LogFactory;
 import org.junit.Assert;
 
 import java.io.IOException;
@@ -17,6 +24,7 @@ public class ForeSignalAuth {
 
     private WebClient webClient = null;
     private final String landingPageUrl = "https://foresignal.com/en/login/index";
+
 
     public ForeSignalAuth() throws IOException {
         final String applicationName = "Chrome";
@@ -44,9 +52,84 @@ public class ForeSignalAuth {
         this.webClient.setAjaxController(new NicelyResynchronizingAjaxController());
         this.webClient.getOptions().setThrowExceptionOnScriptError(false);
         // avoid a bunch of logs
+        LogFactory.getFactory().setAttribute("org.apache.commons.logging.Log", "org.apache.commons.logging.impl.NoOpLog");
         java.util.logging.Logger.getLogger("com.gargoylesoftware.htmlunit").setLevel(Level.OFF);
+        java.util.logging.Logger.getLogger("org.apache.commons.httpclient").setLevel(Level.OFF);
         this.webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);
-        this.webClient.waitForBackgroundJavaScript(20000);
+        this.webClient.getOptions().setThrowExceptionOnScriptError(false);
+        this.webClient.waitForBackgroundJavaScript(10000);
+        this.webClient.setIncorrectnessListener(new IncorrectnessListener() {
+
+            @Override
+            public void notify(String arg0, Object arg1) {
+                // TODO Auto-generated method stub
+
+            }
+        });
+        this.webClient.setCssErrorHandler(new CSSErrorHandler() {
+
+            @Override
+            public void warning(CSSParseException exception) throws CSSException {
+                // TODO Auto-generated method stub
+
+            }
+
+            @Override
+            public void fatalError(CSSParseException exception) throws CSSException {
+                // TODO Auto-generated method stub
+
+            }
+
+            @Override
+            public void error(CSSParseException exception) throws CSSException {
+                // TODO Auto-generated method stub
+
+            }
+        });
+        this.webClient.setJavaScriptErrorListener(new JavaScriptErrorListener() {
+
+            @Override
+            public void timeoutError(HtmlPage arg0, long arg1, long arg2) {
+                // TODO Auto-generated method stub
+
+            }
+
+            @Override
+            public void scriptException(HtmlPage arg0, ScriptException arg1) {
+                // TODO Auto-generated method stub
+
+            }
+
+            @Override
+            public void malformedScriptURL(HtmlPage arg0, String arg1, MalformedURLException arg2) {
+                // TODO Auto-generated method stub
+
+            }
+
+            @Override
+            public void loadScriptError(HtmlPage htmlPage, java.net.URL url, Exception e) {
+
+            }
+
+            @Override
+            public void warn(String s, String s1, int i, String s2, int i1) {
+
+            }
+
+        });
+        this.webClient.setHTMLParserListener(new HTMLParserListener() {
+
+            @Override
+            public void error(String s, java.net.URL url, String s1, int i, int i1, String s2) {
+
+            }
+
+            @Override
+            public void warning(String s, java.net.URL url, String s1, int i, int i1, String s2) {
+
+            }
+        });
+
     }
 
     public void getCookies() {
