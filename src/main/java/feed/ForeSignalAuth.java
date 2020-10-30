@@ -45,9 +45,8 @@ public class ForeSignalAuth {
         this.webClient.getOptions().setThrowExceptionOnScriptError(false);
         // avoid a bunch of logs
         java.util.logging.Logger.getLogger("com.gargoylesoftware.htmlunit").setLevel(Level.OFF);
-        java.util.logging.Logger.getLogger("com.gargoylesoftware.htmlunit").setLevel(Level.OFF);
         this.webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);
-        this.webClient.waitForBackgroundJavaScript(10000);
+        this.webClient.waitForBackgroundJavaScript(20000);
     }
 
     public void getCookies() {
@@ -64,8 +63,10 @@ public class ForeSignalAuth {
         HtmlElement button = form.getElementsByTagName("button").get(0);
         final HtmlTextInput textFieldUserName = form.getInputByName("user_name");
         final HtmlPasswordInput passwordInput = form.getInputByName("user_password");
+        final HtmlCheckBoxInput checkbox = form.getInputByName("set_remember_me_cookie");
         textFieldUserName.type("jianw851");
         passwordInput.type("Lover2!!");
+        checkbox.setChecked(true);
         final HtmlPage indexPage = button.click();
         Assert.assertTrue(indexPage.asText().contains("My account"));
     }

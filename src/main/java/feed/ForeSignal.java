@@ -55,7 +55,7 @@ public class ForeSignal implements Feed {
     private static Gmail gmail = null;
     private final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
     private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
-    private static final int TIME_OFFSET = 5;
+    private static final int TIME_OFFSET = 8;
     private static String TOPIC = null;
     private static String INSTRUMENT = null;
     private EventPublisher publisher = null;
@@ -66,6 +66,8 @@ public class ForeSignal implements Feed {
     private static long lastMessageDeliverTimeInSec = -1L;
     private final static List<String> labelIDs = Arrays.asList("Label_586885049211149128");
     private final static String userID = "me";
+
+    private final ForeSignalAuth auth = new ForeSignalAuth();
 
     // html parser
     static class Parser {
@@ -139,11 +141,12 @@ public class ForeSignal implements Feed {
     }
 
 
-    public ForeSignal(EventPublisher publisher, String topic) throws GeneralSecurityException, IOException {
+    public ForeSignal(EventPublisher publisher, String topic) throws Exception {
         gmail = new Gmail.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
                 .setApplicationName(System.getenv("GCP_APPLICATION_NAME"))
                 .build();
         init();
+        this.auth.authenticate();
         this.TOPIC = topic;
         if(topic.charAt(topic.length()-1) == '*') {
             this.TOPIC = topic.replace("*","");
@@ -186,9 +189,9 @@ public class ForeSignal implements Feed {
     private static String getMessage(String messageId)
             throws IOException {
         Message message = gmail.users().messages().get(userID, messageId).execute();
-        long newMsgTime = message.getInternalDate() / 1000L + TIME_OFFSET;
-        if(lastMessageDeliverTimeInSec < newMsgTime) {
-            lastMessageDeliverTimeInSec = newMsgTime;
+        long newMsgTime = message.getInternalDate() / 1000L;
+        if(lastMessageDeliverTimeInSec <= newMsgTime) {
+            lastMessageDeliverTimeInSec = newMsgTime + TIME_OFFSET;
             logger.info("new message detected, lastMessageDeliverTimeInSec updated: " + lastMessageDeliverTimeInSec + " -> " +
                     DateTimeUtils.epochToDateTimeString(lastMessageDeliverTimeInSec));
         }
@@ -244,7 +247,7 @@ public class ForeSignal implements Feed {
         return messages;
     }
 
-    private void init() throws IOException {
+    private void init() throws Exception {
         if (lastMessageDeliverTimeInSec == -1) {
             ListMessagesResponse response = gmail.users().messages().list(userID)
                     .setLabelIds(labelIDs).setQ("after:"+String.valueOf(dateTime.toEpochSecond()-DateTimeUtils.weekInSec)).execute();
@@ -268,18 +271,16 @@ public class ForeSignal implements Feed {
     public void run() throws Exception {
         while(true) {
             queryNewEmails();
-            sleep(10000); // query every 10 seconds
+            sleep(60000); // query every 10 seconds
         }
     }
 
     private void queryNewEmails() throws Exception {
-        List<Message> messageIds = ForeSignal.listMessagesWithLabels("after:"+String.valueOf(lastMessageDeliverTimeInSec));
+        List<Message> messageIds = ForeSignal.listMessagesWithLabels("is:unread after:"+String.valueOf(lastMessageDeliverTimeInSec));
         if(messageIds.size() > 0) {
-            ForeSignalAuth auth = new ForeSignalAuth();
-            auth.authenticate();
             for (Message msg : messageIds) {
                 String htmlMessage = ForeSignal.getMessage(msg.getId());
-                String result = Parser.Parse(htmlMessage, auth);
+                String result = Parser.Parse(htmlMessage, this.auth);
                 if(Parser.canSend) {
                     logger.info("Sending signal to kafka:\nTOPIC: " + TOPIC + INSTRUMENT + "\nMESSAGE: " + result);
                     publisher.publish(TOPIC + INSTRUMENT, result);
