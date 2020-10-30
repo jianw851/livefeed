@@ -62,7 +62,7 @@ public class OandaSignal implements Feed {
 
 
     // app specific params
-    private static ZonedDateTime dateTime = ZonedDateTime.ofInstant(Instant.now(), ZoneId.of("US/Pacific"));
+    private static ZonedDateTime dateTime = ZonedDateTime.ofInstant(Instant.now(), ZoneId.of(DateTimeUtils.defaultTimeZone));
     private static long lastMessageDeliverTimeInSec = -1L;
     private final static List<String> labelIDs = Arrays.asList("Label_7808765998247590589");
     private final static String userID = "me";
@@ -76,7 +76,7 @@ public class OandaSignal implements Feed {
         private static boolean canSend = false;
 
         /*
-        CURRENCY|IDENTIFIED_TIME|DELIVER_TIME|BREAKOUT_PRICE|FORECAST_PRICE|PROBABILITY|MIN_INTERVAL|MAX_INTERVAL
+        CURRENCY|IDENTIFIED_TIME|DELIVER_TIME|BREAKOUT_PRICE|FORECAST_PRICE|STOPLOSS_PRICE|PROBABILITY|MIN_INTERVAL|MAX_INTERVAL
          */
         static String Parse(String htmlContent) throws RuntimeException {
             doc = Jsoup.parse(htmlContent);
@@ -102,7 +102,7 @@ public class OandaSignal implements Feed {
                 ret.append(instrument.substring(3, 6));
                 ret.append("|");
                 INSTRUMENT = ret.substring(0, ret.length()-1).toString();
-                // parse IDENTIFIED_TIME|BREAKOUT_PRICE|FORECAST_PRICE|PROBABILITY
+                // parse IDENTIFIED_TIME|BREAKOUT_PRICE|FORECAST_PRICE|STOPLOSS_PRICE|PROBABILITY
                 String temp = body.substring(body.indexOf("Identified time"), body.indexOf("% Pattern"));
                 // String temp = tdList.get(15).text();
                 temp = temp.replace("Breakout price ", "");
@@ -113,12 +113,12 @@ public class OandaSignal implements Feed {
                 //System.out.println(temp);
                 ret.append(array[1]);
                 ret.append("|");
-                ret.append(DateTimeUtils.dateTime.toString().substring(0,23));
+                ret.append(DateTimeUtils.getCurrentTimeStringinUTC());
                 ret.append("|");
                 ret.append(array[2]);
                 ret.append("|");
                 ret.append(array[3]);
-                ret.append("|");
+                ret.append("||"); // additional pipe to skip the stoploss_price
                 ret.append(array[5].replace(" ",""));
                 ret.append("|");
                 // parse MIN_INTERVAL|MAX_INTERVAL
@@ -298,6 +298,7 @@ public class OandaSignal implements Feed {
                 if(Parser.canSend) {
                     logger.info("Sending signal to kafka:\nTOPIC: " + TOPIC + INSTRUMENT + "\nMESSAGE: " + result);
                     publisher.publish(TOPIC + INSTRUMENT, result);
+                    Parser.canSend = false;
                 }
             }
         }

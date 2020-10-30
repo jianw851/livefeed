@@ -39,7 +39,7 @@ import static java.lang.Thread.sleep;
 public class ForeSignal implements Feed {
 
     // logger
-    private final static Logger logger = Logger.getLogger(OandaSignal.class);
+    private final static Logger logger = Logger.getLogger(ForeSignal.class);
 
     // gmail
     private static final List<String> SCOPES = Arrays.asList(GmailScopes.MAIL_GOOGLE_COM,
@@ -55,14 +55,14 @@ public class ForeSignal implements Feed {
     private static Gmail gmail = null;
     private final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
     private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
-    private static final int TIME_OFFSET = 3;
+    private static final int TIME_OFFSET = 5;
     private static String TOPIC = null;
     private static String INSTRUMENT = null;
     private EventPublisher publisher = null;
 
 
     // app specific params
-    private static ZonedDateTime dateTime = ZonedDateTime.ofInstant(Instant.now(), ZoneId.of("US/Pacific"));
+    private static ZonedDateTime dateTime = ZonedDateTime.ofInstant(Instant.now(), ZoneId.of(DateTimeUtils.defaultTimeZone));
     private static long lastMessageDeliverTimeInSec = -1L;
     private final static List<String> labelIDs = Arrays.asList("Label_586885049211149128");
     private final static String userID = "me";
@@ -88,79 +88,52 @@ public class ForeSignal implements Feed {
         /*
         CURRENCY|IDENTIFIED_TIME|DELIVER_TIME|BREAKOUT_PRICE|FORECAST_PRICE|STOPLOSS_PRICE|PROBABILITY|MIN_INTERVAL|MAX_INTERVAL|
          */
-        static String Parse(String emailContent) throws RuntimeException {
-            String signalPageContent = parseEmailLink(emailContent);
-            doc = Jsoup.parse(signalPageContent);
-            Element bd = doc.body();
+        static String Parse(String emailContent, ForeSignalAuth auth) throws Exception {
+            String signalLink = parseEmailLink(emailContent);
+            doc = Jsoup.parse(auth.getTargetContent(signalLink));
+            body = doc.body().text();
+            title = body.substring(0, 8);
             StringBuilder ret = new StringBuilder();
-            if(title.contains(IDENTIFIER)) {
-                body = doc.body().text();
-                List<Element> tdList = doc.body().select("td");
-                /*
-                for(int i = 0; i < tdList.size() ; i++) {
-                    System.out.print(i + " ");
-                    System.out.println(tdList.get(i).text());
-                }
-                */
-                // parse instrument
-                String instrument = title.replace(IDENTIFIER, "");
-                if(instrument.length() > 6) {
-                    throw new RuntimeException("Oanda Signal html page update, instrument parsing Exception");
-                }
-                ret.append(instrument.substring(0,3));
-                ret.append("_");
-                ret.append(instrument.substring(3, 6));
+            // set instrument(currency pair)
+            ret.append(title.substring(0,3));
+            ret.append("_");
+            ret.append(title.substring(4, 7));
+            ret.append("|");
+            INSTRUMENT = ret.substring(0, ret.length()-1).toString();
+            // set indentified_time
+            int fromIdx = body.indexOf("From GMT");
+            int tillIdx = body.indexOf("Till GMT");
+            String fromTimeString = body.substring(fromIdx+5, tillIdx-1);
+            ret.append(DateTimeUtils.parseForeSignalTime(fromTimeString));
+            ret.append("|");
+            ret.append(DateTimeUtils.getCurrentTimeStringinUTC());
+            ret.append("|");
+            int sellIdx = body.indexOf("Sell ");
+            int buyIdx = body.indexOf("Buy ");
+            int tpIdx = body.indexOf("Take profit");
+            int slIdx = body.indexOf("Stop loss");
+            String tillTimeString;
+            char Direction = 'L';
+            if(buyIdx < 0) Direction = 'S';
+            if(Direction == 'L') {
+                ret.append(body.substring(body.indexOf("Buy at") + 7, tpIdx-1));
                 ret.append("|");
-                INSTRUMENT = ret.substring(0, ret.length()-1).toString();
-                // parse IDENTIFIED_TIME|BREAKOUT_PRICE|FORECAST_PRICE|PROBABILITY
-                String temp = body.substring(body.indexOf("Identified time"), body.indexOf("% Pattern"));
-                // String temp = tdList.get(15).text();
-                temp = temp.replace("Breakout price ", "");
-                temp = temp.replace("Forecast price ", "");
-                temp = temp.replace("Forecast pips ", "");
-                temp = temp.replace("Probability ", "");
-                String[] array = temp.split(" : ");
-                //System.out.println(temp);
-                ret.append(array[1]);
-                ret.append("|");
-                ret.append(DateTimeUtils.dateTime.toString().substring(0,23));
-                ret.append("|");
-                ret.append(array[2]);
-                ret.append("|");
-                ret.append(array[3]);
-                ret.append("|");
-                ret.append(array[5].replace(" ",""));
-                ret.append("|");
-                // parse MIN_INTERVAL|MAX_INTERVAL
-                temp = body.substring(body.indexOf("Interval"), body.indexOf("This service is subject to this"));
-                temp = temp.replace("Interval", "");
-                temp = temp.replace("Pattern ", "");
-                array = temp.split(": ");
-                int minInteval = Integer.MAX_VALUE, maxInterval = Integer.MIN_VALUE;
-                for(String str : array) {
-                    if(str.contains("Min")) {
-                        int curr = Integer.valueOf(str.replace("Min","").replace(" ",""));
-                        if(curr < minInteval)
-                            minInteval = curr;
-                        if(curr > maxInterval)
-                            maxInterval = curr;
-                    } else if(str.contains("Daily")) {
-                        int curr = 1440;
-                        if(curr < minInteval)
-                            minInteval = curr;
-                        if(curr > maxInterval)
-                            maxInterval = curr;
-                    }
-                }
-                ret.append(String.valueOf(minInteval*60));
-                ret.append("|");
-                ret.append(String.valueOf(maxInterval*60));
-                //System.out.printf("Body: %s%n", body);
-                //System.out.printf("%d, %d %n", minInteval, maxInterval);
-                canSend = true;
+                tillTimeString = body.substring(tillIdx+5    , buyIdx-1);
             } else {
-                canSend = false;
+                ret.append(body.substring(body.indexOf("Sell at") + 8, tpIdx-1));
+                ret.append("|");
+                tillTimeString = body.substring(tillIdx+5    , sellIdx-1);
             }
+            ret.append(body.substring(tpIdx+16, slIdx-1));
+            ret.append("|");
+            ret.append(body.substring(slIdx+13, body.indexOf("Instructions Pending")-1));
+            ret.append("|75|");
+            long holdSeconds = DateTimeUtils.diffForeSignalFromTillInSec(fromTimeString, tillTimeString);
+            ret.append(String.valueOf(holdSeconds));
+            ret.append("|");
+            ret.append(String.valueOf(holdSeconds));
+            ret.append("|");
+            canSend = true;
             return ret.toString();
         }
     }
@@ -187,7 +160,7 @@ public class ForeSignal implements Feed {
     private static Credential getCredentials(final NetHttpTransport HTTP_TRANSPORT) throws IOException {
         // Load client secrets
         logger.info("Load client secrets");
-        InputStream in = OandaSignal.class.getResourceAsStream(CREDENTIALS_FILE_PATH);
+        InputStream in = ForeSignal.class.getResourceAsStream(CREDENTIALS_FILE_PATH);
         if (in == null) {
             throw new FileNotFoundException("Resource not found: " + CREDENTIALS_FILE_PATH);
         }
@@ -292,29 +265,31 @@ public class ForeSignal implements Feed {
                 DateTimeUtils.epochToDateTimeString(lastMessageDeliverTimeInSec));
     }
 
-    public void run() throws IOException, RuntimeException, GeneralSecurityException, InterruptedException {
+    public void run() throws Exception {
         while(true) {
             queryNewEmails();
-            sleep(30000); // query every 30 seconds
+            sleep(10000); // query every 10 seconds
         }
     }
 
-    private void queryNewEmails() throws IOException, RuntimeException, GeneralSecurityException {
+    private void queryNewEmails() throws Exception {
         List<Message> messageIds = ForeSignal.listMessagesWithLabels("after:"+String.valueOf(lastMessageDeliverTimeInSec));
         if(messageIds.size() > 0) {
+            ForeSignalAuth auth = new ForeSignalAuth();
+            auth.authenticate();
             for (Message msg : messageIds) {
                 String htmlMessage = ForeSignal.getMessage(msg.getId());
-                System.out.println(htmlMessage);
-                String result = Parser.Parse(htmlMessage);
+                String result = Parser.Parse(htmlMessage, auth);
                 if(Parser.canSend) {
                     logger.info("Sending signal to kafka:\nTOPIC: " + TOPIC + INSTRUMENT + "\nMESSAGE: " + result);
-                    // publisher.publish(TOPIC + INSTRUMENT, result);
+                    publisher.publish(TOPIC + INSTRUMENT, result);
+                    Parser.canSend = false;
                 }
             }
         }
     }
 
-    public static void main1(String[] args) throws GeneralSecurityException, IOException {
+    public static void main(String[] args) throws Exception {
         ForeSignal signal = new ForeSignal(null, "FORESIGNAL");
         signal.queryNewEmails();
     }

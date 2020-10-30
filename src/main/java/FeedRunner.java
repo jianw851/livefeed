@@ -3,6 +3,7 @@ import event.EventTopic;
 import feed.Feed;
 import feed.OandaRestV20;
 import feed.OandaSignal;
+import feed.ForeSignal;
 import org.apache.log4j.Logger;
 
 public class FeedRunner {
@@ -47,6 +48,9 @@ public class FeedRunner {
         } else if (brokerName.equalsIgnoreCase("OANDA") && apiName.equalsIgnoreCase("SIGNAL")) {
             logger.info("Creating OandaSignal feed...");
             this.feed = new OandaSignal(publisher, topic);
+        } else if (brokerName.equalsIgnoreCase("FORESIGNAL") && apiName.equalsIgnoreCase("SIGNAL")) {
+            logger.info("Creating ForeSignal feed...");
+            this.feed = new ForeSignal(publisher, topic);
         }
         logger.info("Construct FeedRunner done...");
     }

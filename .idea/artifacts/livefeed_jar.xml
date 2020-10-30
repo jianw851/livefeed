@@ -1,7 +1,7 @@
 <component name="ArtifactManager">
   <artifact type="jar" build-on-make="true" name="livefeed:jar">
     <output-path>$PROJECT_DIR$/out/artifacts/livefeed_jar</output-path>
-    <root id="archive" name="livefeed.jar">
+    <root id="archive" name="livefe.jar">
       <element id="module-output" name="livefeed" />
       <element id="extracted-dir" path="$MAVEN_REPOSITORY$/com/google/code/findbugs/jsr305/1.3.9/jsr305-1.3.9.jar" path-in-jar="/" />
       <element id="extracted-dir" path="$MAVEN_REPOSITORY$/com/google/oauth-client/google-oauth-client-java6/1.23.0/google-oauth-client-java6-1.23.0.jar" path-in-jar="/" />

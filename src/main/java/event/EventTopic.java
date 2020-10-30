@@ -30,6 +30,8 @@ public class EventTopic {
             return BrokerName.OANDA.id();
         } else if ("IB".equals(b)) {
             return BrokerName.IB.id();
+        } else if ("FORESIGNAL".equals(b)) {
+            return BrokerName.FORESIGNAL.id();
         } else {
             // to do log in kafka
             throw new Exception();
