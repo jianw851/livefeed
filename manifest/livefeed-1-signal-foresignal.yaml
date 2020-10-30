@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: livefeed-foresignal
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: livefeed
+  template:
+    metadata:
+      labels:
+        app: livefeed
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/arch
+                operator: In
+                values:
+                - arm64
+      containers:
+        - name: livefeed 
+          image: liveget/livefeed_aarch64:0.1.0
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 9092
+          env:
+            - name: FEED_NAME
+              value: "FORESIGNAL-CURRENCY-SIGNAL-*"
+            - name: ACCOUNT_ID
+              value: "001-001-1638442-003"
+            - name: TOKEN
+              value: "78d5bef0a740e26c22be914c7d95b172-df4f81049d9996f71bbfc23924ad145e"
+            - name: THRESHOLD
+              value: "0.00005"
+            - name: BROKER_API_NAME
+              value: "SIGNAL"
+            - name: BROKER_ENV
+              value: "prod"
+            - name: GCP_APPLICATION_NAME
+              value: "livefeed"
+            - name: GCP_TOKENS_DIRECTORY_PATH
+              value: "/opt/livefeed/tokens"
+      imagePullSecrets:
+        - name: regcred
