@@ -289,10 +289,5 @@ public class ForeSignal implements Feed {
         }
     }
 
-    public static void main(String[] args) throws Exception {
-        ForeSignal signal = new ForeSignal(null, "FORESIGNAL");
-        signal.queryNewEmails();
-    }
-
 }
 

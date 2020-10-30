@@ -45,6 +45,7 @@ public class ForeSignalAuth {
         this.webClient.getOptions().setThrowExceptionOnScriptError(false);
         // avoid a bunch of logs
         java.util.logging.Logger.getLogger("com.gargoylesoftware.htmlunit").setLevel(Level.OFF);
+        java.util.logging.Logger.getLogger("com.gargoylesoftware.htmlunit").setLevel(Level.OFF);
         this.webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);
         this.webClient.waitForBackgroundJavaScript(10000);
     }
