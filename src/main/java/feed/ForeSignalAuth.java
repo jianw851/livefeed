@@ -11,6 +11,7 @@ import com.gargoylesoftware.htmlunit.javascript.JavaScriptErrorListener;
 import com.gargoylesoftware.htmlunit.javascript.host.URL;
 import com.gargoylesoftware.htmlunit.util.Cookie;
 import org.apache.commons.logging.LogFactory;
+import org.apache.log4j.Logger;
 import org.junit.Assert;
 
 import java.io.IOException;
@@ -21,7 +22,7 @@ import java.util.logging.Level;
 
 public class ForeSignalAuth {
 
-
+    private final static Logger logger = Logger.getLogger(ForeSignalAuth.class);
     private WebClient webClient = null;
     private final String landingPageUrl = "https://foresignal.com/en/login/index";
 
@@ -47,7 +48,7 @@ public class ForeSignalAuth {
         this.webClient.getOptions().setJavaScriptEnabled(true);
         this.webClient.getOptions().setCssEnabled(false);
         //this.webClient.getOptions().setWebSocketEnabled(true);
-        this.webClient.getOptions().setUseInsecureSSL(true);
+        //this.webClient.getOptions().setUseInsecureSSL(true);
         this.webClient.getCookieManager().setCookiesEnabled(true);
         this.webClient.setAjaxController(new NicelyResynchronizingAjaxController());
         this.webClient.getOptions().setThrowExceptionOnScriptError(false);
@@ -57,7 +58,7 @@ public class ForeSignalAuth {
         java.util.logging.Logger.getLogger("org.apache.commons.httpclient").setLevel(Level.OFF);
         this.webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);
         this.webClient.getOptions().setThrowExceptionOnScriptError(false);
-        this.webClient.waitForBackgroundJavaScript(10000);
+        this.webClient.waitForBackgroundJavaScript(240000);
         this.webClient.setIncorrectnessListener(new IncorrectnessListener() {
 
             @Override
@@ -129,7 +130,7 @@ public class ForeSignalAuth {
 
             }
         });
-
+        logger.info("Initialize WebClient done ...");
     }
 
     public void getCookies() {
@@ -152,12 +153,14 @@ public class ForeSignalAuth {
         checkbox.setChecked(true);
         final HtmlPage indexPage = button.click();
         Assert.assertTrue(indexPage.asText().contains("My account"));
+        logger.info("Authenticate WebClient done ...");
     }
 
     public String getTargetContent(final String url) throws Exception {
         final HtmlPage page = this.webClient.getPage(url);
         Assert.assertTrue(page.asText().contains("My account"));
-        return page.asText();
+        logger.debug("WebClient parse webpage done, url: " + url);
+        return page.asXml();
     }
 
 } 

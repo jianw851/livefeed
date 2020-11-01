@@ -1,29 +1,15 @@
 package feed;
 
-import com.google.api.client.auth.oauth2.Credential;
-import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
-import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver;
-import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
-import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
-import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
-import com.google.api.client.http.javanet.NetHttpTransport;
-import com.google.api.client.json.JsonFactory;
-import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.repackaged.org.apache.commons.codec.binary.Base64;
 import com.google.api.client.repackaged.org.apache.commons.codec.binary.StringUtils;
-import com.google.api.client.util.store.FileDataStoreFactory;
-import com.google.api.services.gmail.Gmail;
 import com.google.api.services.gmail.model.*;
-import com.google.api.services.gmail.GmailScopes;
 import event.EventPublisher;
 import org.apache.log4j.Logger;
 import org.jsoup.nodes.Element;
 import util.DateTimeUtils;
 
-import javax.mail.MessagingException;
-import javax.mail.Session;
-import javax.mail.internet.MimeMessage;
 import java.io.*;
+import java.security.GeneralSecurityException;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -31,6 +17,7 @@ import java.util.*;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import util.GmailService;
 
 import static java.lang.Thread.sleep;
 
@@ -38,21 +25,6 @@ public class ForeSignalFromGmail implements Feed {
 
     // logger
     private final static Logger logger = Logger.getLogger(ForeSignalFromGmail.class);
-
-    // gmail
-    private static final List<String> SCOPES = Arrays.asList(GmailScopes.MAIL_GOOGLE_COM,
-            GmailScopes.GMAIL_METADATA, GmailScopes.GMAIL_LABELS,
-            GmailScopes.GMAIL_READONLY, GmailScopes.GMAIL_SEND,
-            GmailScopes.GMAIL_COMPOSE, GmailScopes.GMAIL_INSERT);
-    private static final List<String> URLSCOPES = Arrays.asList("https://mail.google.com/",
-            "https://www.googleapis.com/auth/gmail.modify",
-            "https://www.googleapis.com/auth/gmail.readonly",
-            "https://www.googleapis.com/auth/gmail.addons.current.message.readonly",
-            "https://www.googleapis.com/auth/gmail.addons.current.message.action");
-    private static final String CREDENTIALS_FILE_PATH = "/credentials.json";
-    private static Gmail gmail = null;
-    private final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
-    private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
     private static final int TIME_OFFSET = 8;
     private static String TOPIC = null;
     private static String INSTRUMENT = null;
@@ -140,9 +112,6 @@ public class ForeSignalFromGmail implements Feed {
 
 
     public ForeSignalFromGmail(EventPublisher publisher, String topic) throws Exception {
-        gmail = new Gmail.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
-                .setApplicationName(System.getenv("GCP_APPLICATION_NAME"))
-                .build();
         init();
         this.auth.authenticate();
         this.TOPIC = topic;
@@ -153,31 +122,6 @@ public class ForeSignalFromGmail implements Feed {
     }
 
     /**
-     * Creates an authorized Credential object.
-     * @param HTTP_TRANSPORT The network HTTP Transport.
-     * @return An authorized Credential object.
-     * @throws IOException If the credentials.json file cannot be found.
-     */
-    private static Credential getCredentials(final NetHttpTransport HTTP_TRANSPORT) throws IOException {
-        // Load client secrets
-        logger.info("Load client secrets");
-        InputStream in = ForeSignalFromGmail.class.getResourceAsStream(CREDENTIALS_FILE_PATH);
-        if (in == null) {
-            throw new FileNotFoundException("Resource not found: " + CREDENTIALS_FILE_PATH);
-        }
-        GoogleClientSecrets clientSecrets = GoogleClientSecrets.load(JSON_FACTORY, new InputStreamReader(in));
-
-        // Build flow and trigger user authorization request.
-        GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(
-                HTTP_TRANSPORT, JSON_FACTORY, clientSecrets, URLSCOPES)
-                .setDataStoreFactory(new FileDataStoreFactory(new java.io.File(System.getenv("GCP_TOKENS_DIRECTORY_PATH"))))
-                .setAccessType("offline")
-                .build();
-        LocalServerReceiver receiver = new LocalServerReceiver.Builder().setPort(8888).build();
-        return new AuthorizationCodeInstalledApp(flow, receiver).authorize(userID);
-    }
-
-    /**
      * Get Message with given ID.
      *
      * @param messageId ID of Message to retrieve.
@@ -185,8 +129,8 @@ public class ForeSignalFromGmail implements Feed {
      * @throws IOException
      */
     private static String getMessage(String messageId)
-            throws IOException {
-        Message message = gmail.users().messages().get(userID, messageId).execute();
+            throws IOException, GeneralSecurityException {
+        Message message = GmailService.getService().users().messages().get(userID, messageId).execute();
         long newMsgTime = message.getInternalDate() / 1000L;
         if(lastMessageDeliverTimeInSec <= newMsgTime) {
             lastMessageDeliverTimeInSec = newMsgTime + TIME_OFFSET;
@@ -197,64 +141,16 @@ public class ForeSignalFromGmail implements Feed {
         return StringUtils.newStringUtf8(Base64.decodeBase64(message.getPayload().getBody().getData()));
     }
 
-    /**
-     * Get a Message and use it to create a MimeMessage.
-     *
-     * @param service Authorized Gmail API instance.
-     * @param userId User's email address. The special value "me"
-     * can be used to indicate the authenticated user.
-     * @param messageId ID of Message to retrieve.
-     * @return MimeMessage MimeMessage populated from retrieved Message.
-     * @throws IOException
-     * @throws MessagingException
-     */
-    private static MimeMessage getMimeMessage(Gmail service, String userId, String messageId)
-            throws IOException, MessagingException {
-        Message message = service.users().messages().get(userId, messageId).setFormat("raw").execute();
-
-        Base64 base64Url = new Base64(true);
-        byte[] emailBytes = base64Url.decodeBase64(message.getRaw());
-
-        Properties props = new Properties();
-        Session session = Session.getDefaultInstance(props, null);
-
-        MimeMessage email = new MimeMessage(session, new ByteArrayInputStream(emailBytes));
-        return email;
-    }
-
-    /**
-     * List all Messages of the user's mailbox with labelIds and Query applied.
-     * @param query To specify a accurate epoch time in seconds for PST timezone pass the query
-     *        for example: after:1388552400 before:1391230800
-     * @throws IOException
-     */
-    private static List<Message> listMessagesWithLabels(String query) throws IOException {
-        ListMessagesResponse response = gmail.users().messages().list(userID)
-                .setLabelIds(labelIDs).setQ(query).execute();
-        List<Message> messages = new ArrayList<Message>();
-        while (response.getMessages() != null) {
-            messages.addAll(response.getMessages());
-            if (response.getNextPageToken() != null) {
-                String pageToken = response.getNextPageToken();
-                response = gmail.users().messages().list(userID).setLabelIds(labelIDs)
-                        .setPageToken(pageToken).execute();
-            } else {
-                break;
-            }
-        }
-        return messages;
-    }
-
     private void init() throws Exception {
         if (lastMessageDeliverTimeInSec == -1) {
-            ListMessagesResponse response = gmail.users().messages().list(userID)
+            ListMessagesResponse response = GmailService.getService().users().messages().list(userID)
                     .setLabelIds(labelIDs).setQ("after:"+String.valueOf(dateTime.toEpochSecond()-DateTimeUtils.weekInSec)).execute();
             if(response.getMessages().size() > 0) {
                 // for testing purpose, can modify get(#) to get the last # emails
                 // however in production, the number should always to set to 0
                 // otherwise an old signal will be sent
                 String msgID = response.getMessages().get(0).getId();
-                Message message = gmail.users().messages().get(userID, msgID).execute();
+                Message message = GmailService.getService().users().messages().get(userID, msgID).execute();
                 lastMessageDeliverTimeInSec = message.getInternalDate() / 1000L + TIME_OFFSET; // add time offset in case duplicate signal
                 // every time when restart this app, update the timestamp to pull emails
 
@@ -274,7 +170,7 @@ public class ForeSignalFromGmail implements Feed {
     }
 
     private void queryNewEmails() throws Exception {
-        List<Message> messageIds = ForeSignalFromGmail.listMessagesWithLabels("is:unread after:"+String.valueOf(lastMessageDeliverTimeInSec));
+        List<Message> messageIds = GmailService.getInstance().listMessagesWithLabels("is:unread after:"+String.valueOf(lastMessageDeliverTimeInSec), labelIDs);
         if(messageIds.size() > 0) {
             for (Message msg : messageIds) {
                 String htmlMessage = ForeSignalFromGmail.getMessage(msg.getId());

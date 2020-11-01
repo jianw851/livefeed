@@ -5,6 +5,12 @@ import feed.OandaRestV20;
 import feed.OandaSignal;
 import feed.ForeSignal;
 import org.apache.log4j.Logger;
+import util.GmailService;
+import util.LogUtils;
+
+import javax.mail.MessagingException;
+import java.io.IOException;
+import java.security.GeneralSecurityException;
 
 public class FeedRunner {
     private static FeedRunner INSTANCE = null;
@@ -86,11 +92,12 @@ public class FeedRunner {
         so each kafka record will be send inside each feed
         only exception message will be send in main funtion
          */
-    public static void main(String[] args) {
+    public static void main(String[] args) throws GeneralSecurityException, IOException, MessagingException {
         try {
             FeedRunner feedRunner = FeedRunner.getInstance();
             feedRunner.feed.run();
         } catch (Exception e) {
+            GmailService.getInstance().sendWarningEmail(LogUtils.getStackTrace(e));
             e.printStackTrace();
         }
     }
