@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: livefeed-foresignal
+  name: livefeed-signal-oanda
 spec:
   replicas: 1
   selector:
@@ -29,7 +29,7 @@ spec:
             - containerPort: 9092
           env:
             - name: FEED_NAME
-              value: "FORESIGNAL-CURRENCY-SIGNAL-*"
+              value: "OANDA-CURRENCY-SIGNAL-*"
             - name: ACCOUNT_ID
               value: "001-001-1638442-003"
             - name: TOKEN
