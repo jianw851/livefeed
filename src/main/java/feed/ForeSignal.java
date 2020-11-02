@@ -191,7 +191,7 @@ public class ForeSignal implements Feed {
             for (SignalKafkaMessage msg : messages) {
                 logger.info("Sending signal to kafka:\nTOPIC: " + this.TOPIC + msg.instrument + "\nMESSAGE: " + msg.message);
                 publisher.publish(this.TOPIC + msg.instrument, msg.message);
-                GmailService.sendSignalEmail("Oanda Technical Analysis", "TOPIC: " + TOPIC + msg.instrument + "\nMESSAGE: " + msg.message);
+                GmailService.getInstance().sendSignalEmail("Oanda Technical Analysis", "TOPIC: " + TOPIC + msg.instrument + "\nMESSAGE: " + msg.message);
             }
         }
     }
