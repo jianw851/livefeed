@@ -48,7 +48,7 @@ public class ForeSignalAuth {
         this.webClient.getOptions().setJavaScriptEnabled(true);
         this.webClient.getOptions().setCssEnabled(false);
         //this.webClient.getOptions().setWebSocketEnabled(true);
-        //this.webClient.getOptions().setUseInsecureSSL(true);
+        this.webClient.getOptions().setUseInsecureSSL(true);
         this.webClient.getCookieManager().setCookiesEnabled(true);
         this.webClient.setAjaxController(new NicelyResynchronizingAjaxController());
         this.webClient.getOptions().setThrowExceptionOnScriptError(false);
@@ -58,7 +58,7 @@ public class ForeSignalAuth {
         java.util.logging.Logger.getLogger("org.apache.commons.httpclient").setLevel(Level.OFF);
         this.webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);
         this.webClient.getOptions().setThrowExceptionOnScriptError(false);
-        this.webClient.waitForBackgroundJavaScript(240000);
+        this.webClient.waitForBackgroundJavaScript(120000);
         this.webClient.setIncorrectnessListener(new IncorrectnessListener() {
 
             @Override
