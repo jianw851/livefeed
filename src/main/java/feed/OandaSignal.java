@@ -195,7 +195,7 @@ public class OandaSignal implements Feed {
                 if(Parser.canSend) {
                     logger.info("Sending signal to kafka:\nTOPIC: " + TOPIC + INSTRUMENT + "\nMESSAGE: " + result);
                     publisher.publish(TOPIC + INSTRUMENT, result);
-                    GmailService.sendSignalEmail("Oanda Technical Analysis", "TOPIC: " + TOPIC + INSTRUMENT + "\nMESSAGE: " + result);
+                    GmailService.getInstance().sendSignalEmail("Oanda Technical Analysis", "TOPIC: " + TOPIC + INSTRUMENT + "\nMESSAGE: " + result);
                     Parser.canSend = false;
                 }
             }
