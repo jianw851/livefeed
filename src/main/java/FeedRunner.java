@@ -1,9 +1,6 @@
 import event.EventPublisher;
 import event.EventTopic;
-import feed.Feed;
-import feed.OandaRestV20;
-import feed.OandaSignal;
-import feed.ForeSignal;
+import feed.*;
 import org.apache.log4j.Logger;
 import util.GmailService;
 import util.LogUtils;
@@ -56,7 +53,7 @@ public class FeedRunner {
             this.feed = new OandaSignal(publisher, topic);
         } else if (brokerName.equalsIgnoreCase("FORESIGNAL") && apiName.equalsIgnoreCase("SIGNAL")) {
             logger.info("Creating ForeSignal feed...");
-            this.feed = new ForeSignal(publisher, topic);
+            this.feed = new ForeSignalFromGmail(publisher, topic);
         }
         logger.info("Construct FeedRunner done...");
     }
@@ -97,7 +94,7 @@ public class FeedRunner {
             FeedRunner feedRunner = FeedRunner.getInstance();
             feedRunner.feed.run();
         } catch (Exception e) {
-            GmailService.getInstance().sendWarningEmail(LogUtils.getStackTrace(e));
+            // GmailService.getInstance().sendWarningEmail(LogUtils.getStackTrace(e));
             e.printStackTrace();
         }
     }

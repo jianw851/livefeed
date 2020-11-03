@@ -26,7 +26,7 @@ public class ForeSignal_0_0_1 implements Feed {
 
     // app specific params
     private static ZonedDateTime dateTime = ZonedDateTime.ofInstant(Instant.now(), ZoneId.of(DateTimeUtils.defaultTimeZone));
-    private final ForeSignalAuth auth = new ForeSignalAuth();
+    private final ForeSignalHtmlUnitAuth auth = new ForeSignalHtmlUnitAuth();
 
     // html parser
     static class Parser {
@@ -39,8 +39,8 @@ public class ForeSignal_0_0_1 implements Feed {
         /*
         CURRENCY|IDENTIFIED_TIME|DELIVER_TIME|BREAKOUT_PRICE|FORECAST_PRICE|STOPLOSS_PRICE|PROBABILITY|MIN_INTERVAL|MAX_INTERVAL|
          */
-        static String Parse(String link, ForeSignalAuth auth, Map.Entry<String, Long> entry, Map<String, Long> map) throws Exception {
-            doc = Jsoup.parse(auth.getTargetContent(link));
+        static String Parse(String link, ForeSignalHtmlUnitAuth auth, Map.Entry<String, Long> entry, Map<String, Long> map) throws Exception {
+            doc = Jsoup.parse(auth.getTargetContent(link, 1));
             body = doc.body().text();
             if(body.indexOf(IDENTIFIER) > 0) {
                 canSend = false;
@@ -50,7 +50,7 @@ public class ForeSignal_0_0_1 implements Feed {
             int fromIdx = body.indexOf("From GMT");
             int tillIdx = body.indexOf("Till GMT");
             String fromTimeString = body.substring(fromIdx+5, tillIdx-1);
-            long currSignalIdentifiedTime = DateTimeUtils.parseForeSignalTimeEpoch(fromTimeString);
+            long currSignalIdentifiedTime = DateTimeUtils.parseForeSignalTimeEpochUTC(fromTimeString);
             if(entry.getValue() >= currSignalIdentifiedTime) {
                 canSend = false;
                 //logger.info("Identical or elder signal, ignore!");
@@ -114,7 +114,7 @@ public class ForeSignal_0_0_1 implements Feed {
         this.lastSignalDict.put("nzdusd", 0L);
         this.lastSignalDict.put("gbpchf", 0L);
 
-        this.auth.authenticate();
+        //this.auth.authenticate(null, 0);
         this.TOPIC = topic;
         if(topic.charAt(topic.length()-1) == '*') {
             this.TOPIC = topic.replace("*","");

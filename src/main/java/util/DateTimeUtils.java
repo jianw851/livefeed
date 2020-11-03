@@ -1,6 +1,7 @@
 package util;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 
 public class DateTimeUtils {
     public static long weekInSec = 604800;
@@ -22,6 +23,12 @@ public class DateTimeUtils {
         return date.format(DateTimeFormatter.ISO_ZONED_DATE_TIME);
     }
 
+    public static long getCurrentTimeEpochinUTC() {
+        Instant now = Instant.now();
+        ZonedDateTime date = ZonedDateTime.ofInstant(now, ZoneId.of(utcTimeZone));
+        return date.toEpochSecond();
+    }
+
     /*
     input format: GMT-04:00 17:58
     output format: 2020-08-22T21:58:00Z[UTC]
@@ -37,7 +44,7 @@ public class DateTimeUtils {
     input format: GMT-04:00 17:58
     output format: 16593434300
     */
-    public static long parseForeSignalTimeEpoch(String inputString) {
+    public static long parseForeSignalTimeEpochUTC(String inputString) {
         ZonedDateTime ret = DateTimeUtils.parseForeSignalTime2ZonedDateTime(inputString);
         return ret.toEpochSecond();
     }
@@ -66,6 +73,20 @@ public class DateTimeUtils {
         ZonedDateTime ret = date.with(LocalTime.of(hour, min, 0, 0));
         ret = ret.plusDays(dayOffset);
         return ret;
+    }
+
+    /*
+    Input    14:54 23-10-2020 GMT
+    Output   epoch time in sec (long)
+     */
+    public static long parseForeSignalEmailTimeEpochUTC(String from) {
+        if(from.indexOf("GMT") >= 0) {
+            from = from.replace("GMT", "").trim();
+            ZonedDateTime time = LocalDateTime.parse(from, DateTimeFormatter.ofPattern("HH:mm dd-MM-yyyy", Locale.US))
+                    .atZone(ZoneId.of(utcTimeZone));
+            return time.toEpochSecond();
+        }
+        return 0;
     }
 
     /*

@@ -25,23 +25,26 @@ public class ForeSignalFromGmail implements Feed {
 
     // logger
     private final static Logger logger = Logger.getLogger(ForeSignalFromGmail.class);
-    private static final int TIME_OFFSET = 8;
+    private static ZonedDateTime dateTime = ZonedDateTime.ofInstant(Instant.now(), ZoneId.of(DateTimeUtils.defaultTimeZone));
+
+    private static final int TIME_OFFSET = 10;
     private static String TOPIC = null;
     private static String INSTRUMENT = null;
     private EventPublisher publisher = null;
 
-
     // app specific params
-    private static ZonedDateTime dateTime = ZonedDateTime.ofInstant(Instant.now(), ZoneId.of(DateTimeUtils.defaultTimeZone));
     private static long lastMessageDeliverTimeInSec = -1L;
     private final static List<String> labelIDs = Arrays.asList("Label_586885049211149128");
     private final static String userID = "me";
+    private static long currSignalIdentifiedTimeUTC = 0L;
+    private static long tillSignalTimeUTC = 0L;
 
-    private final ForeSignalAuth auth = new ForeSignalAuth();
+    private final ForeSignalSeleniumAuth auth = new ForeSignalSeleniumAuth();
+    private static Map<String, Long> lastSignalDict = new HashMap<>();
 
     // html parser
     static class Parser {
-        private static final String IDENTIFIER = "Forex signal";
+        private static final String IDENTIFIER = "Filled ";
         private static Document doc = null;
         private static String title = null;
         private static String body = null;
@@ -57,25 +60,86 @@ public class ForeSignalFromGmail implements Feed {
             return link;
         }
 
+        static String canProcess(String emailContent) throws RuntimeException {
+            // get instrument
+            doc = Jsoup.parse(emailContent);
+            Element bd = doc.body();
+            String emailTitle = bd.select("div.signal").text();
+            int instEndIdx = emailTitle.indexOf("Forex signal");
+            INSTRUMENT = emailTitle.substring(instEndIdx-8, instEndIdx-1).replace("/", "_");
+            String signalTime = bd.select("div.time").select("div").get(2).text();
+            int fromIdx = signalTime.indexOf("From");
+            int tillIdx = signalTime.indexOf("Till");
+            String fromStr = signalTime.substring(fromIdx+4, tillIdx-1).trim();
+            String tillStr = signalTime.substring(tillIdx+4, signalTime.length()).trim();
+            currSignalIdentifiedTimeUTC = DateTimeUtils.parseForeSignalEmailTimeEpochUTC(fromStr);
+            tillSignalTimeUTC = DateTimeUtils.parseForeSignalEmailTimeEpochUTC(tillStr);
+            long currTimeEpochinUTC = DateTimeUtils.getCurrentTimeEpochinUTC();
+            if(lastSignalDict.get(INSTRUMENT) >= currSignalIdentifiedTimeUTC) {
+                logger.info("Signal has already been parsed, ignore!");
+                return null;
+            } else if (Math.abs(currTimeEpochinUTC - currSignalIdentifiedTimeUTC) > 600) {
+                logger.info("Signal might be too old, ignore!");
+                // return null;
+            }
+            String link = bd.select("div.link").select("a.button").get(0).attributes().get("href");
+            System.out.println(link);
+            return link;
+        }
+
         /*
         CURRENCY|IDENTIFIED_TIME|DELIVER_TIME|BREAKOUT_PRICE|FORECAST_PRICE|STOPLOSS_PRICE|PROBABILITY|MIN_INTERVAL|MAX_INTERVAL|
          */
-        static String Parse(String emailContent, ForeSignalAuth auth) throws Exception {
-            String signalLink = parseEmailLink(emailContent);
-            doc = Jsoup.parse(auth.getTargetContent(signalLink));
-            body = doc.body().text();
-            title = body.substring(0, 8);
-            StringBuilder ret = new StringBuilder();
-            // set instrument(currency pair)
-            ret.append(title.substring(0,3));
-            ret.append("_");
-            ret.append(title.substring(4, 7));
-            ret.append("|");
-            INSTRUMENT = ret.substring(0, ret.length()-1).toString();
-            // set indentified_time
+        static String Parse(String emailContent, ForeSignalSeleniumAuth auth) throws Exception {
+            String signalLink = canProcess(emailContent);
+            if( signalLink == null) {
+                logger.info("Email is too old, ignore!");
+                return null;
+            }
+            doc = Jsoup.parse(auth.getTargetContent(signalLink, 1));
+            /*
+            String htmlAbsPath = "/home/jwang/livefeed/template/new.html";
+            Path path = Paths.get(htmlAbsPath);
+            List<String> all = Files.readAllLines(path);
+            StringBuilder sb = new StringBuilder();
+            for(String line : all) {
+                sb.append(line);
+            }
+            doc = Jsoup.parse(sb.toString());
+            */
+            Element bodyElement = doc.body();
+            body = bodyElement.text();
+
+            // check if signal expired
+            if(body.indexOf(IDENTIFIER) > 0) {
+                logger.info("Signal expired :" + body);
+                return null;
+            }
             int fromIdx = body.indexOf("From GMT");
             int tillIdx = body.indexOf("Till GMT");
             String fromTimeString = body.substring(fromIdx+5, tillIdx-1);
+            // long currSignalIdentifiedTimeUTC = DateTimeUtils.parseForeSignalTimeEpochUTC(fromTimeString);
+            // int instEndIdx = body.indexOf("Forex signal");
+            // INSTRUMENT = body.substring(instEndIdx-8, instEndIdx-1).replace("/", "_");
+            long currTimeEpochinUTC = DateTimeUtils.getCurrentTimeEpochinUTC();
+            // check if signal has already been processed
+            // or too old to process
+            // or too early to process
+            if(lastSignalDict.get(INSTRUMENT) >= currSignalIdentifiedTimeUTC) {
+                logger.info("Signal has already been parsed, ignore!");
+                return null;
+            } else if (Math.abs(currTimeEpochinUTC - currSignalIdentifiedTimeUTC) > 660) {
+                logger.info("Signal might be too old, ignore!");
+                return null;
+            } else {
+                logger.info("parser detected a new signal for " + INSTRUMENT);
+                lastSignalDict.put(INSTRUMENT, currSignalIdentifiedTimeUTC);
+            }
+            StringBuilder ret = new StringBuilder();
+            // set instrument(currency pair)
+            ret.append(INSTRUMENT);
+            ret.append("|");
+            // set indentified_time
             ret.append(DateTimeUtils.parseForeSignalTime(fromTimeString));
             ret.append("|");
             ret.append(DateTimeUtils.getCurrentTimeStringinUTC());
@@ -88,19 +152,19 @@ public class ForeSignalFromGmail implements Feed {
             char Direction = 'L';
             if(buyIdx < 0) Direction = 'S';
             if(Direction == 'L') {
-                ret.append(body.substring(body.indexOf("Buy at") + 7, tpIdx-1));
+                ret.append(body.substring(body.indexOf("Buy at") + 7, tpIdx-1).trim());
                 ret.append("|");
                 tillTimeString = body.substring(tillIdx+5    , buyIdx-1);
             } else {
-                ret.append(body.substring(body.indexOf("Sell at") + 8, tpIdx-1));
+                ret.append(body.substring(body.indexOf("Sell at") + 8, tpIdx-1).trim());
                 ret.append("|");
                 tillTimeString = body.substring(tillIdx+5    , sellIdx-1);
             }
-            ret.append(body.substring(tpIdx+16, slIdx-1));
+            ret.append(body.substring(tpIdx+16, slIdx-1).trim());
             ret.append("|");
-            ret.append(body.substring(slIdx+13, body.indexOf("Instructions Pending")-1));
+            ret.append(body.substring(slIdx+13, body.indexOf("Instructions Pending")-1).trim());
             ret.append("|75|");
-            long holdSeconds = DateTimeUtils.diffForeSignalFromTillInSec(fromTimeString, tillTimeString);
+            long holdSeconds = tillSignalTimeUTC - currSignalIdentifiedTimeUTC;
             ret.append(String.valueOf(holdSeconds));
             ret.append("|");
             ret.append(String.valueOf(holdSeconds));
@@ -110,10 +174,9 @@ public class ForeSignalFromGmail implements Feed {
         }
     }
 
-
     public ForeSignalFromGmail(EventPublisher publisher, String topic) throws Exception {
         init();
-        this.auth.authenticate();
+        // this.auth.authenticate();
         this.TOPIC = topic;
         if(topic.charAt(topic.length()-1) == '*') {
             this.TOPIC = topic.replace("*","");
@@ -160,12 +223,21 @@ public class ForeSignalFromGmail implements Feed {
         }
         logger.info("lastMessageDeliverTimeInSec set: " + lastMessageDeliverTimeInSec + " -> " +
                 DateTimeUtils.epochToDateTimeString(lastMessageDeliverTimeInSec));
+        lastSignalDict.put("EUR_USD", 0L);
+        lastSignalDict.put("USD_CHF", 0L);
+        lastSignalDict.put("GBP_USD", 0L);
+        lastSignalDict.put("USD_JPY", 0L);
+        lastSignalDict.put("USD_CAD", 0L);
+        lastSignalDict.put("AUD_USD", 0L);
+        lastSignalDict.put("EUR_JPY", 0L);
+        lastSignalDict.put("NZD_USD", 0L);
+        lastSignalDict.put("GBP_CHF", 0L);
     }
 
     public void run() throws Exception {
         while(true) {
             queryNewEmails();
-            sleep(60000); // query every 10 seconds
+            sleep(30000); // query every 60 seconds
         }
     }
 
@@ -178,6 +250,7 @@ public class ForeSignalFromGmail implements Feed {
                 if(Parser.canSend) {
                     logger.info("Sending signal to kafka:\nTOPIC: " + TOPIC + INSTRUMENT + "\nMESSAGE: " + result);
                     publisher.publish(TOPIC + INSTRUMENT, result);
+                    GmailService.getInstance().sendSignalEmail("Foresignal", "TOPIC: " + TOPIC + INSTRUMENT + "\nMESSAGE: " + result);
                     Parser.canSend = false;
                 }
             }

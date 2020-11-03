@@ -7,7 +7,6 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import util.DateTimeUtils;
-import util.GmailService;
 
 import java.time.Instant;
 import java.time.ZoneId;
@@ -44,7 +43,7 @@ public class ForeSignal implements Feed {
         private static Document doc = null;
         private static String title = null;
         private static String body = null;
-        private static ForeSignalAuth auth = null;
+        private static ForeSignalHtmlUnitAuth auth = null;
 
         private Parser() throws Exception {
             lastSignalDict.put("EUR_USD", 0L);
@@ -56,8 +55,8 @@ public class ForeSignal implements Feed {
             lastSignalDict.put("EUR_JPY", 0L);
             lastSignalDict.put("NZD_USD", 0L);
             lastSignalDict.put("GBP_CHF", 0L);
-            auth = new ForeSignalAuth();
-            auth.authenticate();
+            auth = new ForeSignalHtmlUnitAuth();
+            // auth.authenticate();
         }
 
         public static Parser getInstance() throws Exception {
@@ -71,7 +70,7 @@ public class ForeSignal implements Feed {
         CURRENCY|IDENTIFIED_TIME|DELIVER_TIME|BREAKOUT_PRICE|FORECAST_PRICE|STOPLOSS_PRICE|PROBABILITY|MIN_INTERVAL|MAX_INTERVAL|
          */
         static List<SignalKafkaMessage> Parse() throws Exception {
-            doc = Jsoup.parse(auth.getTargetContent(baseUrl));
+            doc = Jsoup.parse(auth.getTargetContent(baseUrl, 1));
             /*
             String htmlAbsPath = "/home/jwang/livefeed/template/index.html";
             Path path = Paths.get(htmlAbsPath);
@@ -102,21 +101,21 @@ public class ForeSignal implements Feed {
         static SignalKafkaMessage ParseSignal(String content) {
             // check if signal expired
             if(content.indexOf(IDENTIFIER) > 0) {
-                logger.debug("Signal expired :" + content);
+                logger.info("Signal expired :" + content);
                 return null;
             }
             // check if signal has already been parsed
             int fromIdx = content.indexOf("From GMT");
             int tillIdx = content.indexOf("Till GMT");
             String fromTimeString = content.substring(fromIdx+5, tillIdx-1);
-            long currSignalIdentifiedTime = DateTimeUtils.parseForeSignalTimeEpoch(fromTimeString);
+            long currSignalIdentifiedTime = DateTimeUtils.parseForeSignalTimeEpochUTC(fromTimeString);
             String instrument = content.substring(0, 7);
             instrument = instrument.replace("/", "_");
             if(lastSignalDict.get(instrument) >= currSignalIdentifiedTime) {
-                logger.debug("Signal has already been parsed, ignore!");
+                logger.info("Signal has already been parsed, ignore!");
                 return null;
             } else {
-                logger.debug("parser detected a new signal for " + instrument);
+                logger.info("parser detected a new signal for " + instrument);
                 lastSignalDict.put(instrument, currSignalIdentifiedTime);
             }
             // parse the signal
@@ -175,7 +174,7 @@ public class ForeSignal implements Feed {
         int offsetSec = 0;
         while(true) {
             queryNewSignals();
-            logger.debug("wait " + (waitInSec + offsetSec) / 1000 + " seconds");
+            logger.info("wait " + (waitInSec + offsetSec) / 1000 + " seconds");
             sleep(waitInSec + offsetSec); // query about every 1 min
             offsetSec = (int)(Math.random() * 10000.0);
             if(isNegative) {
@@ -191,7 +190,7 @@ public class ForeSignal implements Feed {
             for (SignalKafkaMessage msg : messages) {
                 logger.info("Sending signal to kafka:\nTOPIC: " + this.TOPIC + msg.instrument + "\nMESSAGE: " + msg.message);
                 publisher.publish(this.TOPIC + msg.instrument, msg.message);
-                GmailService.getInstance().sendSignalEmail("Foresignal", "TOPIC: " + TOPIC + msg.instrument + "\nMESSAGE: " + msg.message);
+                //GmailService.getInstance().sendSignalEmail("Foresignal", "TOPIC: " + TOPIC + msg.instrument + "\nMESSAGE: " + msg.message);
             }
         }
     }
