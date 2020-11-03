@@ -94,7 +94,7 @@ public class FeedRunner {
             FeedRunner feedRunner = FeedRunner.getInstance();
             feedRunner.feed.run();
         } catch (Exception e) {
-            // GmailService.getInstance().sendWarningEmail(LogUtils.getStackTrace(e));
+            GmailService.getInstance().sendWarningEmail(LogUtils.getStackTrace(e));
             e.printStackTrace();
         }
     }

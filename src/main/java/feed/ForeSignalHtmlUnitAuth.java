@@ -193,7 +193,6 @@ public class ForeSignalHtmlUnitAuth {
         // System.out.println(page.asText());
         String webContent = page.asText();
         if(webContent.contains("We're sorry")) {
-            // throw new Exception("being recognized as robot! fuck!");
             return kickReCaptchaAss(targetUrl, page, depth+1);
         } else if (!webContent.contains("My account")) {
             sleep(5000);

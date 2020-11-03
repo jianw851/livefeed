@@ -56,7 +56,6 @@ public class ForeSignal implements Feed {
             lastSignalDict.put("NZD_USD", 0L);
             lastSignalDict.put("GBP_CHF", 0L);
             auth = new ForeSignalHtmlUnitAuth();
-            // auth.authenticate();
         }
 
         public static Parser getInstance() throws Exception {

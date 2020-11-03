@@ -39,6 +39,8 @@ public class OandaSignal implements Feed {
     private static long lastMessageDeliverTimeInSec = -1L;
     private final static List<String> labelIDs = Arrays.asList("Label_7808765998247590589");
     private final static String userID = "me";
+    private final String signalGmailThreadId = "1758dd99ab59d4d7";
+
 
     // html parser
     static class Parser {
@@ -195,7 +197,7 @@ public class OandaSignal implements Feed {
                 if(Parser.canSend) {
                     logger.info("Sending signal to kafka:\nTOPIC: " + TOPIC + INSTRUMENT + "\nMESSAGE: " + result);
                     publisher.publish(TOPIC + INSTRUMENT, result);
-                    GmailService.getInstance().sendSignalEmail("Oanda Technical Analysis", "TOPIC: " + TOPIC + INSTRUMENT + "\nMESSAGE: " + result);
+                    GmailService.getInstance().sendSignalEmail("Oanda Technical Analysis", "TOPIC: " + TOPIC + INSTRUMENT + "\nMESSAGE: " + result, signalGmailThreadId);
                     Parser.canSend = false;
                 }
             }

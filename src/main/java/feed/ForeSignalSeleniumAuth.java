@@ -9,6 +9,10 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
+import util.GmailService;
+import util.LogUtils;
 
 import java.io.IOException;
 
@@ -73,6 +77,7 @@ public class ForeSignalSeleniumAuth {
 
 
     public String kickReCaptchaAss(final String targetUrl, int depth) throws Exception {
+        GmailService.getInstance().sendManualAssistantRequirementEmail("Foresignal", "recaptcha is complex, need login and click pictures");
         sleep(3000);
         WebElement frame = driver.findElement(By.xpath("//iframe[contains(@src, 'recaptcha')]"));
         driver.switchTo().frame(frame);
@@ -82,7 +87,8 @@ public class ForeSignalSeleniumAuth {
         // WebElement checkmark = driver.findElement(By.xpath("//*[@class='recaptcha-checkbox-checkmark']"));
         // checkmark.click();
         driver.switchTo().defaultContent();
-        sleep(3000);
+        WebDriverWait wait = new WebDriverWait(driver, 600000);
+        wait.until(ExpectedConditions.elementToBeClickable(By.xpath("//*[@type='submit']")));
         WebElement submit = driver.findElement(By.xpath("//*[@type='submit']"));
         submit.click();
         return stateMachine(targetUrl, depth);

@@ -41,6 +41,7 @@ public class ForeSignalFromGmail implements Feed {
 
     private final ForeSignalSeleniumAuth auth = new ForeSignalSeleniumAuth();
     private static Map<String, Long> lastSignalDict = new HashMap<>();
+    private final String signalGmailThreadId = "1758f199f9303f16";
 
     // html parser
     static class Parser {
@@ -80,7 +81,7 @@ public class ForeSignalFromGmail implements Feed {
                 return null;
             } else if (Math.abs(currTimeEpochinUTC - currSignalIdentifiedTimeUTC) > 600) {
                 logger.info("Signal might be too old, ignore!");
-                // return null;
+                return null;
             }
             String link = bd.select("div.link").select("a.button").get(0).attributes().get("href");
             System.out.println(link);
@@ -212,7 +213,7 @@ public class ForeSignalFromGmail implements Feed {
                 // for testing purpose, can modify get(#) to get the last # emails
                 // however in production, the number should always to set to 0
                 // otherwise an old signal will be sent
-                String msgID = response.getMessages().get(0).getId();
+                String msgID = response.getMessages().get(1).getId();
                 Message message = GmailService.getService().users().messages().get(userID, msgID).execute();
                 lastMessageDeliverTimeInSec = message.getInternalDate() / 1000L + TIME_OFFSET; // add time offset in case duplicate signal
                 // every time when restart this app, update the timestamp to pull emails
@@ -237,12 +238,14 @@ public class ForeSignalFromGmail implements Feed {
     public void run() throws Exception {
         while(true) {
             queryNewEmails();
-            sleep(30000); // query every 60 seconds
+            sleep(60000); // query every 60 seconds
+            logger.info("query new emails ..." + DateTimeUtils.getCurrentTimeStringinUTC());
         }
     }
 
     private void queryNewEmails() throws Exception {
-        List<Message> messageIds = GmailService.getInstance().listMessagesWithLabels("is:unread after:"+String.valueOf(lastMessageDeliverTimeInSec), labelIDs);
+        List<Message> messageIds = GmailService.getInstance().listMessagesWithLabels("after:"+String.valueOf(lastMessageDeliverTimeInSec), labelIDs);
+        logger.info("new email size = " + messageIds.size());
         if(messageIds.size() > 0) {
             for (Message msg : messageIds) {
                 String htmlMessage = ForeSignalFromGmail.getMessage(msg.getId());
@@ -250,8 +253,10 @@ public class ForeSignalFromGmail implements Feed {
                 if(Parser.canSend) {
                     logger.info("Sending signal to kafka:\nTOPIC: " + TOPIC + INSTRUMENT + "\nMESSAGE: " + result);
                     publisher.publish(TOPIC + INSTRUMENT, result);
-                    GmailService.getInstance().sendSignalEmail("Foresignal", "TOPIC: " + TOPIC + INSTRUMENT + "\nMESSAGE: " + result);
+                    GmailService.getInstance().sendSignalEmail("Foresignal", "TOPIC: " + TOPIC + INSTRUMENT + "\nMESSAGE: " + result, signalGmailThreadId);
                     Parser.canSend = false;
+                } else {
+                    logger.info("cannot proceed, sleep 1 min ...");
                 }
             }
         }

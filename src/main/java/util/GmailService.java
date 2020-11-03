@@ -51,6 +51,10 @@ public class GmailService {
     private final static String from = "livefeed-error@liveget.com";
     private final static String admin = "jianw851@gmail.com";
     private final static String signalRecipient = "jianw851@gmail.com,yixia.cai@gmail.com";
+    private final static String signalGmailThreadId = "1758f199f9303f16";
+    private final static String runTimeErrorGmailThreadId = "1758f16030d472cd";
+    private final static String humanAssistantGmailThreadId = "1758ef22a8395b42";
+
 
 
     public static GmailService getInstance() throws GeneralSecurityException, IOException {
@@ -159,9 +163,10 @@ public class GmailService {
      * @throws MessagingException
      * @throws IOException
      */
-    public static Message sendMessage(MimeMessage emailContent)
+    public static Message sendMessage(MimeMessage emailContent, String threadId)
             throws MessagingException, IOException {
         Message message = createMessageWithEmail(emailContent);
+        message.setThreadId(threadId);
         message = gmail.users().messages().send(userID, message).execute();
         logger.info("Message id: " + message.getId());
         logger.info(message.toPrettyString());
@@ -171,13 +176,22 @@ public class GmailService {
     public static void sendWarningEmail(String stackTrace) throws MessagingException, IOException {
         String subject = "Livefeed Runtime Error Alert";
         MimeMessage email = createEmail(admin, from, subject, stackTrace);
-        sendMessage(email);
+        sendMessage(email, runTimeErrorGmailThreadId);
     }
 
-    public static void sendSignalEmail(String broker, String signal) throws MessagingException, IOException {
+    public static void sendSignalEmail(String broker, String signal, String threadId) throws MessagingException, IOException {
         String subject = String.format("A new signal received from %s", broker);
         MimeMessage email = createEmail(signalRecipient, from, subject, signal);
-        sendMessage(email);
+        if (threadId == null)
+            sendMessage(email, signalGmailThreadId);
+        else
+            sendMessage(email, threadId);
+    }
+
+    public static void sendManualAssistantRequirementEmail(String broker, String reason) throws MessagingException, IOException {
+        String subject = String.format("Manual recaptcha needed from %s", broker);
+        MimeMessage email = createEmail(signalRecipient, from, subject, reason);
+        sendMessage(email, humanAssistantGmailThreadId);
     }
 
     /**
